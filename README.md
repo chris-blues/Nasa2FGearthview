@@ -51,7 +51,8 @@ by your systems package-management-system.
 
 So, on Debian for instance, you only need to put the following into
 the console:
-(sudo) apt-get install wget imagemagick
+
+$ sudo apt-get install wget imagemagick
 
 Depending on your distro, the package names might differ slightly! Use
 a search engine of your choice to find out, how the packages are named
