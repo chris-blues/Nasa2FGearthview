@@ -39,7 +39,7 @@ Additionally, there are some options you could specify:
 
 So your call could look sth like this:
 
-$ ./convert.sh world download cleanup 8k
+$ ./convert.sh world no-download cleanup 8k
 
 
 ------------------------------------
