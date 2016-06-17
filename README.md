@@ -45,6 +45,14 @@ $ ./convert.sh world no-download cleanup 8k
 ------------------------------------
 Requirements:
 
+WARNING!
+
+This script uses a *lot* disk space! Make sure you have at least 70GB!
+Also, this script will run for a *very long* time! It might be best to
+let it run over night - your computer might become unresponsive from
+time to time, due to the heavy CPU and memory load, which tends to
+occur, when converting 54000x27000 images. ;-)
+
 This script relies on wget and imagemagick. Both are easily installed
 by your systems package-management-system.
 (On Debian/Ubuntu this is "apt-get")
