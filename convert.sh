@@ -156,7 +156,6 @@ function NasaToFG
    if [ $1 == "B2" ] ; then DEST="S2" ; fi
    if [ $1 == "C2" ] ; then DEST="S3" ; fi
    if [ $1 == "D2" ] ; then DEST="S4" ; fi
-   echo "$1 -> $DEST"
   }
 
 function IM2FG
