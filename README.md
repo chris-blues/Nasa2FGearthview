@@ -7,7 +7,7 @@ textures for FG's EarthView.
 About:
 
 This script runs on Linux (maybe Mac also?) in a Bash
-(Bourne Again Shell) Windows is not supported (by the nature of the
+(Bourne Again Shell) - Windows is not supported (by the nature of the
 script).
 
 In the end you will have 8 world-textures in .png and .dds format.
@@ -89,7 +89,7 @@ clouds
 no-download
 	Causes the script to skip the download function. If you
 	already have the source images, then you don't need to
-	re-download them.
+	re-download them. (About 2.4GB!)
 	If omitted, the script will download the source images from
 	NASA. ( http://visibleearth.nasa.gov/ )
 	Uses wget.
