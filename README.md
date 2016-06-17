@@ -6,6 +6,10 @@ textures for FG's EarthView.
 ------------------------------------
 About:
 
+This script runs on Linux (maybe Mac also?) in a Bash
+(Bourne Again Shell) Windows is not supported (by the nature of the
+script).
+
 In the end you will have 8 world-textures in .png and .dds format.
 Generally .dds is better in performance, but it won't work on some
 graphics cards. If this is the case for you, then try the .png files.
