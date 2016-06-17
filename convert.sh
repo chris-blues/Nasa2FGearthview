@@ -232,9 +232,9 @@ function generateWorld
    else echo "=> Skipping existing file: tmp/nightlights_32256x16128.mpc"
    fi
 
-   ##########################################
-   ## Extract low colors (Continents, ice) ##
-   ##########################################
+   #############################################
+   ## Filter out low colors (continents, ice) ##
+   #############################################
    if [ ! -s "tmp/nightlights_32256x16128_lowColorsCut.mpc" ]
    then
      env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 tmp/nightlights_32256x16128.mpc -channel R -level 7.8%,100%,1.5 -channel G -level 13.7%,100%,1.5 -channel B -level 33%,100%,1.5 +channel tmp/nightlights_32256x16128_lowColorsCut.mpc
@@ -256,10 +256,10 @@ function generateWorld
    for f in $IM
    do
      IM2FG $f
-     if [ ! -s "tmp/night_${DEST}.mpc" ]
+     if [ ! -s "tmp/night_${DEST}_neg.mpc" ]
      then
-       convert -monitor tmp/night_${f}.mpc -negate tmp/night_${DEST}.mpc
-     else echo "=> Skipping existing file: tmp/night_${DEST}.mpc"
+       convert -monitor tmp/night_${f}.mpc -negate tmp/night_${DEST}_neg.mpc
+     else echo "=> Skipping existing file: tmp/night_${DEST}_neg.mpc"
      fi
    done
 
