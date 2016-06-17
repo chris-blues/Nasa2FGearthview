@@ -22,8 +22,11 @@ function showHelp
    echo "  pass a resolution, then all resolutions will be generated."
    echo "* Append \"no-cleanup\" to keep the temporary image files in"
    echo "  tmp/"
-   echo "* Append \"continue\" to the command to continue a previously"
-   echo "  failed run"
+   echo
+   echo "If, for some reason, the script aborts, then it will try to"
+   echo "skip the already completed steps, so you don't have to wait"
+   echo "for the first steps to be redone. Those also happen to be the"
+   echo "most heavy loads on the ressources."
    echo
    echo "WARNING!"
    echo "This script uses a _lot_ of disk space! Make sure you choose"
@@ -43,22 +46,19 @@ if [ $1 == "-h" ] ; then showHelp ; fi
 ################################
 for ARG in "$@"
 do
-  if [ $ARG == "download" ] ; then DOWNLOAD="true" ; echo "Downloading images from nasa.gov" ; fi
+  if [ $ARG == "no-download" ] ; then DOWNLOAD="false" ; echo "Skipping the download process" ; fi
   if [ $ARG == "world" ] ; then WORLD="true" ; echo "Generate world textures" ; fi
   if [ $ARG == "clouds" ] ; then CLOUDS="true" ; echo "Generate cloud textures" ; fi
   if [ $ARG == "1k" ] ; then RESOLUTION="1024" ; fi
   if [ $ARG == "2k" ] ; then RESOLUTION="2048" ; fi
   if [ $ARG == "4k" ] ; then RESOLUTION="4096" ; fi
   if [ $ARG == "8k" ] ; then RESOLUTION="8192" ; fi
-  if [ $ARG == "no-cleanup" ] ; then CLEANUP="false" ; fi
   if [ $ARG == "cleanup" ] ; then CLEANUP="true" ; fi
-  if [ $ARG == "continue" ] ; then CONTINUE="true" ; echo "Will continue previous run" ; fi
 done
-if [ -z $DOWNLOAD ] ; then DOWNLOAD="false" ; fi
+if [ -z $DOWNLOAD ] ; then DOWNLOAD="true" ; fi
 if [ -z $WORLD ] ; then WORLD="false" ; fi
 if [ -z $CLOUDS ] ; then CLOUDS="false" ; fi
-if [ -z $CLEANUP ] ; then CLEANUP="true" ; fi
-if [ -z $CONTINUE ] ; then CONTINUE="false" ; fi
+if [ -z $CLEANUP ] ; then CLEANUP="false" ; fi
 
 if [ $CLEANUP == "true" ] ; then echo "Will delete temporary files after this run" ; fi
 if [ $CLEANUP == "false" ] ; then echo "Will keep temporary files after this run" ; fi
@@ -517,7 +517,7 @@ W"
 	if [ ! -s "tmp/${r}/clouds_seams_${t}.mpc" ]
         then
           convert -monitor tmp/clouds_seams_8k_${t}.mpc -resize ${r}x${r} tmp/${r}/clouds_seams_${t}.mpc
-	else echo "=> Skipping existing file: tmp/clouds_${DEST}_emptyBorder.mpc"
+	else echo "=> Skipping existing file: tmp/${r}/clouds_seams_${t}.mpc"
         fi
 	if [ ! -s "output/${r}/clouds_${t}.png" ]
         then
