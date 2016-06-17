@@ -1,10 +1,15 @@
 #!/bin/bash
 
+VERSION="v0.01"
+
 # make sure the script halts on error
 set -e
 
 function showHelp
   {
+   echo "Nasa2FGearthview converter script $VERSION"
+   echo "https://github.com/chris-blues/Nasa2FGearthview"
+   echo
    echo "Usage:"
    echo "./convert.sh [ download world clouds 8k no-cleanup continue ]"
    echo
