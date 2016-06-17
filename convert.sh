@@ -359,9 +359,9 @@ function generateWorld
         echo
 	convert -monitor tmp/world_seams_8k_${t}_emptyBorder.mpc -crop $CROP -resize $RESIZE\! tmp/world_${t}_seam_${b}.mpc
         convert -monitor tmp/world_seams_8k_${t}_emptyBorder.mpc -crop $CROPCORNER -resize 64x64\! tmp/world_${t}_seam_${CORNER_NAME}.mpc
-        convert -monitor tmp/world_seams_8k_${t}.mpc world_${t}_seam_${b}.mpc -geometry $POSITION -composite tmp/world_seams_8k_${t}.mpc
+        convert -monitor tmp/world_seams_8k_${t}.mpc tmp/world_${t}_seam_${b}.mpc -geometry $POSITION -composite tmp/world_seams_8k_${t}.mpc
         echo
-        convert -monitor tmp/world_seams_8k_${t}.mpc world_${t}_seam_${CORNER_NAME}.mpc -geometry $CORNER_POS -composite tmp/world_seams_8k_${t}.mpc
+        convert -monitor tmp/world_seams_8k_${t}.mpc tmp/world_${t}_seam_${CORNER_NAME}.mpc -geometry $CORNER_POS -composite tmp/world_seams_8k_${t}.mpc
         echo
        }
      done
