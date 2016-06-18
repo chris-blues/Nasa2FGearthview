@@ -344,20 +344,41 @@ function generateWorld
    echo "############################################"
    echo "## Resize the NASA-Originals to 8k-(2*64) ##"
    echo "############################################"
+
+   convert -size 8192x582 xc:#020515
+
    for t in $NASA
    do
      NasaToFG $t
      if [ ! -s "tmp/world_seamless_8064_${DEST}.mpc" ]
      then
-       convert -monitor input/world.200408.3x21600x21600.${t}.png -resize 8064x8064 tmp/world_seamless_8064_${DEST}.mpc
+       {
+        ## Workaround for tiles N3 and N4 - there's a gray failure area at the top border - let's remove it!
+        if [ $t == "N3" ]
+        then
+          # pick a sample pixel. The polar regions are all equally colored.
+          convert -monitor tmp/world_seamless_8064_N2.mpc -crop 1x1+1+1 -resize 8192x582\! tmp/bluebar.mpc
+        fi
+        if [ $t == "N3" -o $t == "N4" ]
+        then
+          {
+           # copy the sample over to the tile:
+           convert -monitor input/world.200408.3x21600x21600.${t}.png -resize 8064x8064 tmp/bluebar.mpc -geometry +0+0 -composite tmp/world_seamless_8064_${DEST}.mpc
+          }
+        else
+          {
+           convert -monitor input/world.200408.3x21600x21600.${t}.png -resize 8064x8064 tmp/world_seamless_8064_${DEST}.mpc
+	  }
+	fi
+       }
      else echo "=> Skipping existing file: tmp/world_seamless_8064_${DEST}.mpc"
      fi
    done
 
    echo
-   echo "#################################################"
-   echo "## Copy nightlights into world's alpha channel ##"
-   echo "#################################################"
+   echo "##################################################"
+   echo "## Merge nightlights into world's alpha channel ##"
+   echo "##################################################"
    for t in $TILES
    do
      if [ ! -s "tmp/world_seamless_8064_${t}_composite.mpc" ]
@@ -640,6 +661,7 @@ echo
 echo "--------------------------------------------------------------"
 echo
 echo "Processing starts..."
+echo
 printf "Target:     "
 if [ $CLOUDS == "true" ] ; then printf "clouds " ; fi
 if [ $WORLD == "true" ] ;  then printf "world" ; fi
