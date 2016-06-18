@@ -38,9 +38,10 @@ Possible targets are:
 * clouds
 
 Additionally, there are some options you could specify:
+* 1k | 2k | 4k | 8k
 * no-download
 * cleanup
-* 1k | 2k | 4k | 8k
+* rebuild
 
 So your call could look sth like this:
 
