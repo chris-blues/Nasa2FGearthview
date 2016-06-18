@@ -301,8 +301,8 @@ function generateWorld
      if [ ! -s "tmp/world_seams_8k_${t}_emptyBorder.mpc" ]
      then
        convert -monitor tmp/world_seamless_8064_${t}_composite.mpc -bordercolor none -border 64 tmp/world_seams_8k_${t}_emptyBorder.mpc
+       echo
      fi
-     echo
      if [ ! -s "tmp/world_seams_8k_${t}.mpc" ]
      then
        cp tmp/world_seams_8k_${t}_emptyBorder.mpc tmp/world_seams_8k_${t}.mpc
@@ -376,6 +376,33 @@ function generateWorld
        convert -monitor tmp/world_seams_8k_${t}.mpc -flip -define dds:compression=dxt5 output/world_seams_8k_${t}.dds
      else echo "=> Skipping existing file: output/world_seams_8k_${t}.dds"
      fi
+
+     #########################################
+     ## Convert to usable formats and sizes ##
+     #########################################
+     for r in $RESOLUTION
+     do
+       {
+        mkdir -p tmp/$r
+        mkdir -p output/$r
+	if [ ! -s "output/${r}/pale_blue_aug_${t}.dds" ]
+        then
+          convert -monitor tmp/world_seams_8k_${t}.mpc -resize ${r}x${r} -flip -define dds:compression=dxt5 output/${r}/pale_blue_aug_${t}.dds
+	else echo "=> Skipping existing file: tmp/${r}/clouds_seams_${t}.mpc"
+        fi
+	if [ ! -s "output/${r}/clouds_${t}.png" ]
+        then
+          convert -monitor tmp/world_seams_8k_${t}.mpc -resize ${r}x${r} output/${r}/pale_blue_aug_${t}.png
+          echo
+	else echo "=> Skipping existing file: output/${r}/clouds_${t}.png"
+        fi
+       }
+     done
+     echo "$t [ done ]"
+
+
+
+
    done
    echo
    echo "World: [ done ]"
@@ -398,17 +425,16 @@ function generateClouds
    ###########################################
    CT="E
 W"
-   if [ ! -s "tmp/cloud.T16k${t}.mpc" ]
-   then
-    {
-     for t in $CT
-     do
+   for t in $CT
+   do
+     if [ ! -s "tmp/cloud.T16k${t}.mpc" ]
+     then
        convert -monitor input/cloud.${t}.2001210.21600x21600.png -resize 16128x16128 -alpha copy +level-colors white tmp/cloud.T16k${t}.mpc
-     done
-     echo
-    }
-   else echo "=> Skipping existing file: tmp/cloud.T16k${t}.mpc"
-   fi
+     else echo "=> Skipping existing file: tmp/cloud.T16k${t}.mpc"
+     fi
+   done
+   echo
+
 
    #################################
    ## cut cloud images into tiles ##
@@ -504,7 +530,6 @@ W"
        }
      done
      echo
-     cp tmp/clouds_${t}_emptyBorder.mpc tmp/clouds_seams_8k_${t}.mpc
 
      #########################################
      ## Convert to usable formats and sizes ##
@@ -515,21 +540,22 @@ W"
         mkdir -p tmp/$r
 	if [ ! -s "tmp/${r}/clouds_seams_${t}.mpc" ]
         then
-          convert -monitor tmp/clouds_seams_8k_${t}.mpc -resize ${r}x${r} tmp/${r}/clouds_seams_${t}.mpc
+          convert -monitor tmp/clouds_${t}_emptyBorder.mpc -resize ${r}x${r} tmp/${r}/clouds_${t}.mpc
 	else echo "=> Skipping existing file: tmp/${r}/clouds_seams_${t}.mpc"
         fi
 	if [ ! -s "output/${r}/clouds_${t}.png" ]
         then
-          convert -monitor tmp/${r}/clouds_seams_${t}.mpc -resize ${r}x${r} output/${r}/clouds_${t}.png
+          convert -monitor tmp/${r}/clouds_${t}.mpc -resize ${r}x${r} output/${r}/clouds_${t}.png
           echo
 	else echo "=> Skipping existing file: output/${r}/clouds_${t}.png"
         fi
        }
      done
-     echo
-     echo "Clouds: [ done ]"
-     echo
+     echo "$t [ done ]"
    done
+   echo
+   echo "Clouds: [ done ]"
+   echo
   }
 
 function cleanUp
@@ -546,6 +572,12 @@ function cleanUp
 
 
 ## Actual program:
+
+for r in $RESOLUTION
+do
+  mkdir -p output/$r
+done
+
 if [ $DOWNLOAD == "true" ] ; then downloadImages ; fi
 if [ $WORLD == "true" ] ;  then generateWorld ; fi
 if [ $CLOUDS == "true" ] ; then generateClouds ; fi
