@@ -21,7 +21,8 @@ algorythm, I think it's useless to also build faulty files.
 However, this is not entirely true! It is possible to switch off the
 .dds/DXT compression. But this results in huge files and is rather
 heavy on the GPU's RAM.
-Additionally, it doesn't render that nice in FG.
+Additionally, it doesn't render that nice in FG, see:
+https://musicchris.de/public_pics/FGearthview/fgfs-screen-270.jpg
 
 
 ------------------------------------
@@ -51,7 +52,9 @@ Requirements:
 
 WARNING!
 
-This script uses a *lot* disk space! Make sure you have at least 70GB!
+This script uses a *lot* disk space! Make sure you have at least 90GB
+available!
+
 Also, this script will run for a *very long* time! It might be best to
 let it run over night - your computer might become unresponsive from
 time to time, due to the heavy CPU and memory load, which tends to

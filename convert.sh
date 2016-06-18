@@ -366,16 +366,6 @@ function generateWorld
        }
      done
      echo
-     if [ ! -s "output/world_seams_8k_${t}.png" ]
-     then
-       convert -monitor tmp/world_seams_8k_${t}.mpc output/world_seams_8k_${t}.png
-     else echo "=> Skipping existing file: output/world_seams_8k_${t}.png"
-     fi
-     if [ ! -s "output/world_seams_8k_${t}.dds" ]
-     then
-       convert -monitor tmp/world_seams_8k_${t}.mpc -flip -define dds:compression=dxt5 output/world_seams_8k_${t}.dds
-     else echo "=> Skipping existing file: output/world_seams_8k_${t}.dds"
-     fi
 
      #########################################
      ## Convert to usable formats and sizes ##
@@ -385,17 +375,10 @@ function generateWorld
        {
         mkdir -p tmp/$r
         mkdir -p output/$r
-	if [ ! -s "output/${r}/pale_blue_aug_${t}.dds" ]
-        then
-          convert -monitor tmp/world_seams_8k_${t}.mpc -resize ${r}x${r} -flip -define dds:compression=dxt5 output/${r}/pale_blue_aug_${t}.dds
-	else echo "=> Skipping existing file: tmp/${r}/clouds_seams_${t}.mpc"
-        fi
-	if [ ! -s "output/${r}/clouds_${t}.png" ]
-        then
-          convert -monitor tmp/world_seams_8k_${t}.mpc -resize ${r}x${r} output/${r}/pale_blue_aug_${t}.png
-          echo
-	else echo "=> Skipping existing file: output/${r}/clouds_${t}.png"
-        fi
+	convert -monitor tmp/world_seams_8k_${t}.mpc -resize ${r}x${r} -flip -define dds:compression=dxt5 output/${r}/pale_blue_aug_${t}.dds
+	echo
+	convert -monitor tmp/world_seams_8k_${t}.mpc -resize ${r}x${r} output/${r}/pale_blue_aug_${t}.png
+	echo
        }
      done
      echo "$t [ done ]"
