@@ -351,16 +351,17 @@ function generateWorld
      then
        {
         ## Workaround for tiles N3 and N4 - there's a gray failure area at the top border - let's remove it!
-        if [ $t == "N3" ]
+        if [ $t == "C1" ]
         then
           # pick a sample pixel. The polar regions are all equally colored.
           convert -monitor tmp/world_seamless_8064_N2.mpc -crop 1x1+1+1 -resize 8192x582\! tmp/bluebar.mpc
         fi
-        if [ $t == "N3" -o $t == "N4" ]
+        if [ $t == "C1" -o $t == "D1" ]
         then
           {
            # copy the sample over to the tile:
            convert -monitor input/world.200408.3x21600x21600.${t}.png -resize 8064x8064 tmp/bluebar.mpc -geometry +0+0 -composite tmp/world_seamless_8064_${DEST}.mpc
+           echo
           }
         else
           {
