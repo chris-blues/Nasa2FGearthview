@@ -22,6 +22,7 @@ function showHelp
    echo "  pass a resolution, then all resolutions will be generated."
    echo "* Append \"cleanup\" to delete all temporary files in tmp/"
    echo "  Same as \"./convert.sh world clouds rebuild\""
+   echo "  Useful if the source files have changed."
    echo "* Append \"rebuild\" to remove the corresponding temp-files"
    echo "  of your requested target."
    echo "  If you have \"world\" as target, that means all files in"
@@ -29,6 +30,7 @@ function showHelp
    echo "  script will have to rebuild the entire set of files."
    echo "  So, if clouds and world are requested, effectively all temp-"
    echo "  files will be deleted (same as cleanup)"
+   echo "  Useful if the source files have changed."
    echo
    echo "If, for some reason, the script aborts, then it will try to"
    echo "skip the already completed steps, so you don't have to wait"
@@ -42,6 +44,24 @@ function showHelp
    echo "This script will take a very long time, depending on your CPU"
    echo "and memory. It's propably best, to let it run over night..."
    echo
+   echo "Examples:"
+   echo "./convert.sh world clouds"
+   echo "Will generate all textures needed for EarthView"
+   echo
+   echo "./convert.sh rebuild clouds no-download"
+   echo "Will skip the download function and will proceed under the"
+   echo "assumption that the download has previously finished"
+   echo "correctly. Furthermore it will only generate the cloud-"
+   echo "textures. Before that all temp-files will be deleted, so that"
+   echo "the textures will be generated from scratch."
+   echo
+   echo "./convert.sh cleanup"
+   echo "Will delete all temp-files, so that on the next run"
+   echo "everything will have to be regenerated from scratch. Useful"
+   echo "if the source images have changed."
+   echo
+   echo "./convert world 4k"
+   echo "Will generate only tiles of the world of 4096x4096 size."
    exit 1
   }
 if [ -z $1 ] ; then showHelp ; fi
@@ -423,16 +443,19 @@ function generateWorld
      echo
 
      echo
-     echo "#########################################"
-     echo "## Convert to usable formats and sizes ##"
-     echo "#########################################"
+     echo "#############################"
+     echo "## Final output of tile $t ##"
+     echo "#############################"
      for r in $RESOLUTION
      do
        {
         mkdir -p tmp/$r
         mkdir -p output/$r
+        echo
+        echo "--> Writing output/${r}/pale_blue_aug_${t}.dds @ ${r}x${r}"
 	convert -monitor tmp/world_seams_8k_${t}.mpc -resize ${r}x${r} -flip -define dds:compression=dxt5 output/${r}/pale_blue_aug_${t}.dds
 	echo
+	echo "--> Writing output/${r}/pale_blue_aug_${t}.png @ ${r}x${r}"
 	convert -monitor tmp/world_seams_8k_${t}.mpc -resize ${r}x${r} output/${r}/pale_blue_aug_${t}.png
 	echo
        }
@@ -444,9 +467,9 @@ function generateWorld
 
 
    done
-   echo
-   echo "World: [ done ]"
-   echo
+   echo "###############################"
+   echo "####    World: [ done ]    ####"
+   echo "###############################"
   }
 
 function generateClouds
@@ -460,9 +483,11 @@ function generateClouds
    mkdir -p tmp
    mkdir -p output
 
-   echo "###########################################"
-   echo "## Prepare the raw images for processing ##"
-   echo "###########################################"
+   echo "######################################"
+   echo "## Resize images to 16k resolution, ##"
+   echo "## copy image to alpha-channel and  ##"
+   echo "## paint the canvas white (#FFFFFF) ##"
+   echo "######################################"
    CT="E
 W"
    for t in $CT
@@ -477,9 +502,9 @@ W"
 
 
    echo
-   echo "#################################"
-   echo "## cut cloud images into tiles ##"
-   echo "#################################"
+   echo "####################################"
+   echo "## cut cloud images into 8k tiles ##"
+   echo "####################################"
    if [ ! -s "tmp/clouds_7.mpc" ]
    then
     {
@@ -575,13 +600,15 @@ W"
      echo
 
      echo
-     echo "#########################################"
-     echo "## Convert to usable formats and sizes ##"
-     echo "#########################################"
+     echo "#############################"
+     echo "## Final output of tile $t ##"
+     echo "#############################"
      for r in $RESOLUTION
      do
        {
         mkdir -p output/$r
+        echo
+        echo "--> Writing output/${r}/clouds_${t}.png @ ${r}x${r}"
 	convert -monitor tmp/clouds_${t}_emptyBorder.mpc -resize ${r}x${r} output/${r}/clouds_${t}.png
        }
      done
@@ -589,9 +616,9 @@ W"
      echo "Cloud $t [ done ]"
      echo
    done
-   echo
-   echo "Clouds: [ done ]"
-   echo
+   echo "################################"
+   echo "####    Clouds: [ done ]    ####"
+   echo "################################"
   }
 
 ###############################
@@ -608,7 +635,7 @@ echo "./convert.sh cleanup"
 echo
 echo "or:"
 echo
-echo "./convert.sh world rebuild"
+echo "./convert.sh rebuild world"
 echo
 echo "--------------------------------------------------------------"
 echo
