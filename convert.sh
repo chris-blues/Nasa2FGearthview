@@ -521,17 +521,8 @@ W"
      do
        {
         mkdir -p tmp/$r
-	if [ ! -s "tmp/${r}/clouds_seams_${t}.mpc" ]
-        then
-          convert -monitor tmp/clouds_${t}_emptyBorder.mpc -resize ${r}x${r} tmp/${r}/clouds_${t}.mpc
-	else echo "=> Skipping existing file: tmp/${r}/clouds_seams_${t}.mpc"
-        fi
-	if [ ! -s "output/${r}/clouds_${t}.png" ]
-        then
-          convert -monitor tmp/${r}/clouds_${t}.mpc -resize ${r}x${r} output/${r}/clouds_${t}.png
-          echo
-	else echo "=> Skipping existing file: output/${r}/clouds_${t}.png"
-        fi
+	convert -monitor tmp/clouds_${t}_emptyBorder.mpc -resize ${r}x${r} tmp/${r}/clouds_${t}.mpc
+	convert -monitor tmp/${r}/clouds_${t}.mpc -resize ${r}x${r} output/${r}/clouds_${t}.png
        }
      done
      echo "$t [ done ]"
@@ -555,6 +546,13 @@ function cleanUp
 
 
 ## Actual program:
+
+echo "Remember!"
+echo "If you have new textures that you want to build, either delete"
+echo "the \"tmp\" folder, or run:"
+echo
+echo "./convert.sh cleanup"
+echo
 
 for r in $RESOLUTION
 do
