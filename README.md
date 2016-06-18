@@ -111,4 +111,8 @@ cleanup
 	you're quite sure that you're done.
 
 rebuild
-	Deletes only the temporary files of the given target.
+	Deletes only the temporary files of the given target. So if
+	you call './convert.sh rebuild world' the script will delete
+	all corresponding temp-files of the target world, which will
+	trigger a complete regeneration (instead of skipping existing
+	files)
