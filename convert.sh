@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="v0.01"
+VERSION="v0.02"
 
 # make sure the script halts on error
 set -e
