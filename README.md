@@ -89,6 +89,11 @@ clouds
 	The locations are the same as the other textures mentioned
 	above.
 
+resolution
+	Lets you specify a desired resolution of the textures.
+	Possible values are 1k, 2k, 4k and 8k. If nothing is
+	specified, the script will generate all of the 4 resolutions.
+
 no-download
 	Causes the script to skip the download function. If you
 	already have the source images, then you don't need to
@@ -104,7 +109,5 @@ cleanup
 	then it's good to have the data there. So only do this, when
 	you're quite sure that you're done.
 
-resolution
-	Lets you specify a desired resolution of the textures.
-	Possible values are 1k, 2k, 4k and 8k. If nothing is
-	specified, the script will generate all of the 4 resolutions.
+rebuild
+	Deletes only the temporary files of the given target.

@@ -11,7 +11,7 @@ function showHelp
    echo "https://github.com/chris-blues/Nasa2FGearthview"
    echo
    echo "Usage:"
-   echo "./convert.sh [ download world clouds 8k no-cleanup continue ]"
+   echo "./convert.sh [ download world clouds 8k cleanup rebuild ]"
    echo
    echo "* Append \"download\" to download the needed images from NASA"
    echo "  -> This will download ca 2.4GB of data!"
@@ -20,8 +20,15 @@ function showHelp
    echo "* Append \"clouds\" to the command to generate cloud tiles"
    echo "* Append the size of the tiles (1k, 2k, 4, 8k). If you don't"
    echo "  pass a resolution, then all resolutions will be generated."
-   echo "* Append \"no-cleanup\" to keep the temporary image files in"
-   echo "  tmp/"
+   echo "* Append \"cleanup\" to delete all temporary files in tmp/"
+   echo "  Same as \"./convert.sh world clouds rebuild\""
+   echo "* Append \"rebuild\" to remove the corresponding temp-files"
+   echo "  of your requested target."
+   echo "  If you have \"world\" as target, that means all files in"
+   echo "  tmp/world* and tmp/night* will be deleted, so that the"
+   echo "  script will have to rebuild the entire set of files."
+   echo "  So, if clouds and world are requested, effectively all temp-"
+   echo "  files will be deleted (same as cleanup)"
    echo
    echo "If, for some reason, the script aborts, then it will try to"
    echo "skip the already completed steps, so you don't have to wait"
@@ -30,7 +37,7 @@ function showHelp
    echo
    echo "WARNING!"
    echo "This script uses a _lot_ of disk space! Make sure you choose"
-   echo "a disk, with at least 70GB free space."
+   echo "a disk, with at least 90GB free space."
    echo
    echo "This script will take a very long time, depending on your CPU"
    echo "and memory. It's propably best, to let it run over night..."
@@ -47,21 +54,20 @@ if [ $1 == "-h" ] ; then showHelp ; fi
 for ARG in "$@"
 do
   if [ $ARG == "no-download" ] ; then DOWNLOAD="false" ; echo "Skipping the download process" ; fi
-  if [ $ARG == "world" ] ; then WORLD="true" ; echo "Generate world textures" ; fi
-  if [ $ARG == "clouds" ] ; then CLOUDS="true" ; echo "Generate cloud textures" ; fi
+  if [ $ARG == "world" ] ; then WORLD="true" ; fi
+  if [ $ARG == "clouds" ] ; then CLOUDS="true" ; fi
   if [ $ARG == "1k" ] ; then RESOLUTION="1024" ; fi
   if [ $ARG == "2k" ] ; then RESOLUTION="2048" ; fi
   if [ $ARG == "4k" ] ; then RESOLUTION="4096" ; fi
   if [ $ARG == "8k" ] ; then RESOLUTION="8192" ; fi
   if [ $ARG == "cleanup" ] ; then CLEANUP="true" ; fi
+  if [ $ARG == "rebuild" ] ; then REBUILD="true" ; fi
 done
 if [ -z $DOWNLOAD ] ; then DOWNLOAD="true" ; fi
 if [ -z $WORLD ] ; then WORLD="false" ; fi
 if [ -z $CLOUDS ] ; then CLOUDS="false" ; fi
 if [ -z $CLEANUP ] ; then CLEANUP="false" ; fi
-
-if [ $CLEANUP == "true" ] ; then echo "Will delete temporary files after this run" ; fi
-if [ $CLEANUP == "false" ] ; then echo "Will keep temporary files after this run" ; fi
+if [ -z $REBUILD ] ; then REBUILD="false" ; fi
 
 
 ########################
@@ -88,7 +94,7 @@ if [ -z $RESOLUTION ]
 4096
 8192"
 fi
-echo "Building resolution: $RESOLUTION"
+
 
 NASA="A1
 B1
@@ -146,6 +152,45 @@ POS_LEFT="+0+64"
 ##  FUNCTIONS  ##
 #################
 
+function rebuild
+  {
+   #############################################
+   ##  Only remove tmp-files of given target  ##
+   #############################################
+
+   echo
+   echo "########################################"
+   echo "## Removing tmp-files of target world ##"
+   echo "########################################"
+   if [ $WORLD == "true" ]
+   then
+     {
+      rm tmp/world*
+      rm tmp/night*
+     }
+   fi
+
+   echo
+   echo "#########################################"
+   echo "## Removing tmp-files of target clouds ##"
+   echo "#########################################"
+   if [ $CLOUDS == "true" ]
+   then
+     {
+      rm tmp/cloud*
+     }
+   fi
+  }
+
+function cleanUp
+  {
+   echo
+   echo "############################"
+   echo "## Removing all tmp-files ##"
+   echo "############################"
+   rm -rv tmp/*
+  }
+
 function NasaToFG
   {
    if [ $1 == "A1" ] ; then DEST="N1" ; fi
@@ -172,6 +217,10 @@ function IM2FG
 
 function downloadImages
   {
+   echo
+   echo "###################################################"
+   echo "## Downloading images from visibleearth.nasa.gov ##"
+   echo "###################################################"
    if [ $WORLD == "true" ] ; then downloadWorld ; fi
    if [ $CLOUDS == "true" ] ; then downloadClouds ; fi
   }
@@ -209,49 +258,54 @@ function generateWorld
    mkdir -p tmp
    mkdir -p output
 
-   ############################
-   ##  Prepare night lights  ##
-   ############################
-
-   ########################################
-   ## Convert to a more efficient format ##
-   ########################################
+   echo
+   echo "############################"
+   echo "##  Prepare night lights  ##"
+   echo "############################"
+   echo
+   echo "########################################"
+   echo "## Convert to a more efficient format ##"
+   echo "########################################"
    if [ ! -s "tmp/nightlights_54000x27000.mpc" ]
    then
      env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 input/dnb_land_ocean_ice.2012.54000x27000_geo.tif tmp/nightlights_54000x27000.mpc
    else echo "=> Skipping existing file: tmp/nightlights_54000x27000.mpc"
    fi
 
-   ########################
-   ## Resize nightlights ##
-   ########################
+   echo
+   echo "########################"
+   echo "## Resize nightlights ##"
+   echo "########################"
    if [ ! -s "tmp/nightlights_32256x16128.mpc" ]
    then
      env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 tmp/nightlights_54000x27000.mpc -resize 32256x16128 tmp/nightlights_32256x16128.mpc
    else echo "=> Skipping existing file: tmp/nightlights_32256x16128.mpc"
    fi
 
-   #############################################
-   ## Filter out low colors (continents, ice) ##
-   #############################################
+   echo
+   echo "#############################################"
+   echo "## Filter out low colors (continents, ice) ##"
+   echo "#############################################"
    if [ ! -s "tmp/nightlights_32256x16128_lowColorsCut.mpc" ]
    then
      env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 tmp/nightlights_32256x16128.mpc -channel R -level 7.8%,100%,1.5 -channel G -level 13.7%,100%,1.5 -channel B -level 33%,100%,1.5 +channel tmp/nightlights_32256x16128_lowColorsCut.mpc
    else echo "=> Skipping existing file: tmp/nightlights_32256x16128_lowColorsCut.mpc"
    fi
 
-   ############################
-   ## Make sure, we're using grayscale, then crop it into 8 pieces á 8064x8064px, at the end force alpha off:
-   ############################
+   echo
+   echo "######################################"
+   echo "## cut nightlight images into tiles ##"
+   echo "######################################"
    if [ ! -s "tmp/night_7.mpc" ]
    then
      convert -monitor tmp/nightlights_32256x16128_lowColorsCut.mpc -colorspace Gray -crop 8064x8064 +repage -alpha Off tmp/night_%d.mpc
    else echo "=> Skipping existing files: tmp/night_[0-7].mpc"
    fi
 
-   ############################
-   ## convert night_[0-7].mpc to FG name convention [NS][1-4] and invert colors (light = transparent, dark = opaque)
-   ############################
+   echo
+   echo "###################"
+   echo "## invert colors ##"
+   echo "###################"
    for f in $IM
    do
      IM2FG $f
@@ -262,13 +316,14 @@ function generateWorld
      fi
    done
 
-   ##############################
-   ##  Prepare world textures  ##
-   ##############################
-
-   ############################################
-   ## Resize the NASA-Originals to 8k-(2*64) ##
-   ############################################
+   echo
+   echo "##############################"
+   echo "##  Prepare world textures  ##"
+   echo "##############################"
+   echo
+   echo "############################################"
+   echo "## Resize the NASA-Originals to 8k-(2*64) ##"
+   echo "############################################"
    for t in $NASA
    do
      NasaToFG $t
@@ -279,10 +334,10 @@ function generateWorld
      fi
    done
 
-
-   #################################################
-   ## Copy nightlights into world's alpha channel ##
-   #################################################
+   echo
+   echo "#################################################"
+   echo "## Copy nightlights into world's alpha channel ##"
+   echo "#################################################"
    for t in $TILES
    do
      if [ ! -s "tmp/world_seamless_8064_${t}_composite.mpc" ]
@@ -292,10 +347,10 @@ function generateWorld
      fi
    done
 
-
-   ####################################
-   ## Put a 64px border to each side ##
-   ####################################
+   echo
+   echo "####################################"
+   echo "## Put a 64px border to each side ##"
+   echo "####################################"
    for t in $TILES
    do
      if [ ! -s "tmp/world_seams_8k_${t}_emptyBorder.mpc" ]
@@ -311,10 +366,10 @@ function generateWorld
      fi
    done
 
-
-   ########################################################
-   ## crop borderline pixels and propagate till the edge ##
-   ########################################################
+   echo
+   echo "######################################################"
+   echo "## crop borderline pixels and propagate to the edge ##"
+   echo "######################################################"
    for t in $TILES
    do
      for b in $BORDERS
@@ -367,9 +422,10 @@ function generateWorld
      done
      echo
 
-     #########################################
-     ## Convert to usable formats and sizes ##
-     #########################################
+     echo
+     echo "#########################################"
+     echo "## Convert to usable formats and sizes ##"
+     echo "#########################################"
      for r in $RESOLUTION
      do
        {
@@ -381,8 +437,9 @@ function generateWorld
 	echo
        }
      done
-     echo "$t [ done ]"
-
+     echo
+     echo "World $t [ done ]"
+     echo
 
 
 
@@ -403,9 +460,9 @@ function generateClouds
    mkdir -p tmp
    mkdir -p output
 
-   ###########################################
-   ## Prepare the raw images for processing ##
-   ###########################################
+   echo "###########################################"
+   echo "## Prepare the raw images for processing ##"
+   echo "###########################################"
    CT="E
 W"
    for t in $CT
@@ -419,9 +476,10 @@ W"
    echo
 
 
-   #################################
-   ## cut cloud images into tiles ##
-   #################################
+   echo
+   echo "#################################"
+   echo "## cut cloud images into tiles ##"
+   echo "#################################"
    if [ ! -s "tmp/clouds_7.mpc" ]
    then
     {
@@ -445,9 +503,10 @@ W"
    else echo "=> Skipping existing files: tmp/clouds_[0-7].mpc"
    fi
 
-   #######################################
-   ## change names from [0-7] to [NS][1-4] and add 64px borders to the tiles
-   #######################################
+   echo
+   echo "###################################"
+   echo "## add 64px borders to the tiles ##"
+   echo "###################################"
    for t in $IM
    do
      IM2FG $t
@@ -460,9 +519,10 @@ W"
    done
    echo
 
-   #######################################################
-   ## add borders and propagate last pixels to the edge ##
-   #######################################################
+   echo
+   echo "#######################################"
+   echo "## propagate last pixels to the edge ##"
+   echo "#######################################"
    for t in $TILES
    do
      for b in $BORDERS
@@ -514,44 +574,54 @@ W"
      done
      echo
 
-     #########################################
-     ## Convert to usable formats and sizes ##
-     #########################################
+     echo
+     echo "#########################################"
+     echo "## Convert to usable formats and sizes ##"
+     echo "#########################################"
      for r in $RESOLUTION
      do
        {
-        mkdir -p tmp/$r
-	convert -monitor tmp/clouds_${t}_emptyBorder.mpc -resize ${r}x${r} tmp/${r}/clouds_${t}.mpc
-	convert -monitor tmp/${r}/clouds_${t}.mpc -resize ${r}x${r} output/${r}/clouds_${t}.png
+        mkdir -p output/$r
+	convert -monitor tmp/clouds_${t}_emptyBorder.mpc -resize ${r}x${r} output/${r}/clouds_${t}.png
        }
      done
-     echo "$t [ done ]"
+     echo
+     echo "Cloud $t [ done ]"
+     echo
    done
    echo
    echo "Clouds: [ done ]"
    echo
   }
 
-function cleanUp
-  {
-   for r in $RESOLUTION
-   do
-      rm -f tmp/${r}/*
-      rmdir tmp/${r}
-   done
-   rm -f tmp/*
-   rmdir tmp
-  }
+###############################
+####    Actual program:    ####
+###############################
 
-
-
-## Actual program:
-
+echo
+echo "--------------------------------------------------------------"
 echo "Remember!"
 echo "If you have new textures that you want to build, either delete"
 echo "the \"tmp\" folder, or run:"
 echo
 echo "./convert.sh cleanup"
+echo
+echo "or:"
+echo
+echo "./convert.sh world rebuild"
+echo
+echo "--------------------------------------------------------------"
+echo
+echo "Processing starts..."
+printf "Target:     "
+if [ $CLOUDS == "true" ] ; then printf "clouds " ; fi
+if [ $WORLD == "true" ] ;  then printf "world" ; fi
+echo
+printf "Resolution: "
+for r in $RESOLUTION ; do printf "%sx%s " $r $r ; done
+echo
+echo
+echo "--------------------------------------------------------------"
 echo
 
 for r in $RESOLUTION
@@ -559,6 +629,7 @@ do
   mkdir -p output/$r
 done
 
+if [ $REBUILD == "true" ] ; then rebuild ; fi
 if [ $DOWNLOAD == "true" ] ; then downloadImages ; fi
 if [ $WORLD == "true" ] ;  then generateWorld ; fi
 if [ $CLOUDS == "true" ] ; then generateClouds ; fi
@@ -576,4 +647,7 @@ if [ $CLEANUP == "false" ]
 then
   echo "If you're certain, that the generated textures are to your satisfaction"
   echo "you can delete folder tmp and thus free up disk space."
+  echo "./convert.sh cleanup"
+  echo "or"
+  echo "rm -r tmp/"
 fi
