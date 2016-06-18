@@ -344,9 +344,6 @@ function generateWorld
    echo "############################################"
    echo "## Resize the NASA-Originals to 8k-(2*64) ##"
    echo "############################################"
-
-   convert -size 8192x582 xc:#020515
-
    for t in $NASA
    do
      NasaToFG $t
