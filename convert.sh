@@ -485,7 +485,6 @@ function generateWorld
      for r in $RESOLUTION
      do
        {
-        mkdir -p tmp/$r
         mkdir -p output/$r
         echo
         echo "--> Writing output/${r}/pale_blue_aug_${t}.dds @ ${r}x${r}"
@@ -506,8 +505,12 @@ function generateWorld
    echo "###############################"
    echo "####    World: [ done ]    ####"
    echo "###############################"
-   CHECK="world"
-   checkResults
+
+   if [ $BUILDCHECKS == "true" ]
+     then
+     CHECK="world"
+     checkResults
+   fi
   }
 
 function generateClouds
@@ -671,8 +674,12 @@ W"
    echo "################################"
    echo "####    Clouds: [ done ]    ####"
    echo "################################"
-   CHECK="clouds"
-   checkResults
+
+   if [ $BUILDCHECKS == "true" ]
+     then
+     CHECK="clouds"
+     checkResults
+   fi
   }
 
 function checkResults
