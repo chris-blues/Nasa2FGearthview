@@ -707,10 +707,10 @@ function checkResults
       POS=0
       for t in 1 2 3 4
       do
-        echo "==> convert -monitor check_clouds.png output/${RES}/clouds_N${t}.png -geometry +${POS}+0 -composite check_clouds.png"
         convert -monitor check_clouds.png output/${RES}/clouds_N${t}.png -geometry +${POS}+0 -composite check_clouds.png
-        echo "==> convert -monitor check_clouds.png output/${RES}/clouds_S${t}.png -geometry +${POS}+${RES} -composite check_clouds.png"
+        echo
         convert -monitor check_clouds.png output/${RES}/clouds_S${t}.png -geometry +${POS}+${RES} -composite check_clouds.png
+        echo
         let "POS += $RES"
       done
       mogrify -monitor -resize 4096x2048 check_clouds.png
@@ -730,7 +730,9 @@ function checkResults
       for t in 1 2 3 4
       do
         convert -monitor check_world.png output/${RES}/pale_blue_aug_N${t}.png -alpha Off -geometry +${POS}+0 -composite check_world.png
+        echo
         convert -monitor check_world.png output/${RES}/pale_blue_aug_S${t}.png -alpha Off -geometry +${POS}+${RES} -composite check_world.png
+        echo
         let "POS += $RES"
       done
       mogrify -monitor -resize 4096x2048 check_world.png
