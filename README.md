@@ -42,6 +42,7 @@ Additionally, there are some options you could specify:
 * no-download
 * cleanup
 * rebuild
+* check
 
 So your call could look sth like this:
 
@@ -116,3 +117,7 @@ rebuild
 	all corresponding temp-files of the target world, which will
 	trigger a complete regeneration (instead of skipping existing
 	files)
+
+check
+	Creates mosaics of the tiles, so you can look at them and see
+	if all went well.

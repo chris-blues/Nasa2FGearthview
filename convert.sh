@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="v0.02"
+VERSION="v0.03"
 
 # make sure the script halts on error
 set -e
@@ -31,6 +31,9 @@ function showHelp
    echo "  So, if clouds and world are requested, effectively all temp-"
    echo "  files will be deleted (same as cleanup)"
    echo "  Useful if the source files have changed."
+   echo "* Append \"check\" to let check the results. This will create"
+   echo "  mosaics of the existing tiles. If no target is specified,"
+   echo "  all 3 layers will be built: clouds world and nightlights."
    echo
    echo "If, for some reason, the script aborts, then it will try to"
    echo "skip the already completed steps, so you don't have to wait"
@@ -82,12 +85,26 @@ do
   if [ $ARG == "8k" ] ; then RESOLUTION="8192" ; fi
   if [ $ARG == "cleanup" ] ; then CLEANUP="true" ; fi
   if [ $ARG == "rebuild" ] ; then REBUILD="true" ; fi
+  if [ $ARG == "check" ] ; then BUILDCHECKS="true" ; fi
 done
 if [ -z $DOWNLOAD ] ; then DOWNLOAD="true" ; fi
 if [ -z $WORLD ] ; then WORLD="false" ; fi
 if [ -z $CLOUDS ] ; then CLOUDS="false" ; fi
 if [ -z $CLEANUP ] ; then CLEANUP="false" ; fi
 if [ -z $REBUILD ] ; then REBUILD="false" ; fi
+if [ -z $BUILDCHECKS ] ; then BUILDCHECKS="false" ; fi
+
+if [ $WORLD == "false" ]
+  then CHECK="world"
+fi
+if [ $CLOUDS == "false" ] 
+  then
+  if [ -z $CHECK ]
+    then CHECK="clouds"
+    else CHECK="all"
+  fi
+fi
+
 
 
 ########################
@@ -489,6 +506,8 @@ function generateWorld
    echo "###############################"
    echo "####    World: [ done ]    ####"
    echo "###############################"
+   CHECK="world"
+   checkResults
   }
 
 function generateClouds
@@ -524,10 +543,10 @@ W"
    echo "####################################"
    echo "## cut cloud images into 8k tiles ##"
    echo "####################################"
-   if [ ! -s "tmp/clouds_7.mpc" ]
+   if [ ! -s "tmp/clouds_S2.mpc" ]
    then
     {
-     convert -monitor tmp/cloud.T16kW.mpc -crop 8064x8064 +repage tmp/clouds_%d.mpc
+     convert -monitor tmp/cloud.T16kE.mpc -crop 8064x8064 +repage tmp/clouds_%d.mpc
      N="0
 1
 2
@@ -535,30 +554,44 @@ W"
      for t in $N
      do
        {
-        if [ $t == "0" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_4.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_4.cache ; fi
-        if [ $t == "1" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_5.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_5.cache ; fi
-        if [ $t == "2" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_6.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_6.cache ; fi
-        if [ $t == "3" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_7.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_7.cache ; fi
+        if [ $t == "0" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_N3.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_N3.cache ; fi
+        if [ $t == "1" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_N4.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_N4.cache ; fi
+        if [ $t == "2" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_S3.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_S3.cache ; fi
+        if [ $t == "3" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_S4.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_S4.cache ; fi
        }
      done
-     convert -monitor tmp/cloud.T16kE.mpc -crop 8064x8064 +repage tmp/clouds_%d.mpc
-     echo
     }
-   else echo "=> Skipping existing files: tmp/clouds_[0-7].mpc"
+   else echo "=> Skipping existing files: tmp/clouds_[N3-S4].mpc"
+   fi
+   if [ ! -s "tmp/clouds_S2.mpc" ]
+   then
+    {
+     convert -monitor tmp/cloud.T16kW.mpc -crop 8064x8064 +repage tmp/clouds_%d.mpc
+     echo
+     for t in $N
+     do
+       {
+        if [ $t == "0" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_N1.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_N1.cache ; fi
+        if [ $t == "1" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_N2.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_N2.cache ; fi
+        if [ $t == "2" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_S1.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_S1.cache ; fi
+        if [ $t == "3" ] ; then mv tmp/clouds_${t}.mpc tmp/clouds_S2.mpc ; mv tmp/clouds_${t}.cache tmp/clouds_S2.cache ; fi
+       }
+     done
+    }
+   else echo "=> Skipping existing files: tmp/clouds_[N1-S2].mpc"
    fi
 
    echo
    echo "###################################"
    echo "## add 64px borders to the tiles ##"
    echo "###################################"
-   for t in $IM
+   for t in $TILES
    do
-     IM2FG $t
-     if [ ! -s "tmp/clouds_${DEST}_emptyBorder.mpc" ]
+     if [ ! -s "tmp/clouds_${t}_emptyBorder.mpc" ]
      then
-       convert -monitor tmp/clouds_${t}.mpc -bordercolor none -border 64 tmp/clouds_${DEST}_emptyBorder.mpc
+       convert -monitor tmp/clouds_${t}.mpc -bordercolor none -border 64 tmp/clouds_${t}_emptyBorder.mpc
        echo
-     else echo "=> Skipping existing file: tmp/clouds_${DEST}_emptyBorder.mpc"
+     else echo "=> Skipping existing file: tmp/clouds_${t}_emptyBorder.mpc"
      fi
    done
    echo
@@ -638,7 +671,80 @@ W"
    echo "################################"
    echo "####    Clouds: [ done ]    ####"
    echo "################################"
+   CHECK="clouds"
+   checkResults
   }
+
+function checkResults
+  {
+   echo
+   echo "##############################################"
+   echo "##  Creating a mosaic of the created tiles  ##"
+   echo "##############################################"
+   echo
+
+   RES=8192
+   for r in $RESOLUTION
+   do
+     if [ $r -le $RES ]
+     then
+       RES=$r
+     fi
+   done
+   let "WIDTH = 4 * $RES"
+   let "HEIGHT = 2 * $RES"
+   echo "Lowest available resolution is: $RES"
+
+   if [ $CHECK == "clouds" -o $CHECK == "all" ]
+   then
+     {
+      echo "checking clouds..."
+      echo
+
+      echo "Creating canvas ${WIDTH}x${HEIGHT}"
+      convert -size ${WIDTH}x${HEIGHT} xc:Black -alpha on check_clouds.png
+
+      POS=0
+      for t in 1 2 3 4
+      do
+        echo "==> convert -monitor check_clouds.png output/${RES}/clouds_N${t}.png -geometry +${POS}+0 -composite check_clouds.png"
+        convert -monitor check_clouds.png output/${RES}/clouds_N${t}.png -geometry +${POS}+0 -composite check_clouds.png
+        echo "==> convert -monitor check_clouds.png output/${RES}/clouds_S${t}.png -geometry +${POS}+${RES} -composite check_clouds.png"
+        convert -monitor check_clouds.png output/${RES}/clouds_S${t}.png -geometry +${POS}+${RES} -composite check_clouds.png
+        let "POS += $RES"
+      done
+      mogrify -monitor -resize 4096x2048 check_clouds.png
+     }
+   fi
+
+   if [ $CHECK == "world" -o $CHECK == "all" ]
+   then
+     {
+      echo "checking world..."
+      echo
+
+      echo "Creating canvas ${WIDTH}x${HEIGHT}"
+      convert -size ${WIDTH}x${HEIGHT} xc:Black -alpha on check_world.png
+
+      POS=0
+      for t in 1 2 3 4
+      do
+        convert -monitor check_world.png output/${RES}/pale_blue_aug_N${t}.png -alpha Off -geometry +${POS}+0 -composite check_world.png
+        convert -monitor check_world.png output/${RES}/pale_blue_aug_S${t}.png -alpha Off -geometry +${POS}+${RES} -composite check_world.png
+        let "POS += $RES"
+      done
+      mogrify -monitor -resize 4096x2048 check_world.png
+
+      for f in $TILES
+      do
+        convert -monitor tmp/night_${f}_neg.mpc -resize 1024x1024 -negate tmp/night_${f}_check.mpc
+      done
+      montage -monitor -mode concatenate -tile 4x tmp/night_??_check.mpc check_night.png
+     }
+   fi
+  }
+
+
 
 ###############################
 ####    Actual program:    ####
@@ -680,7 +786,9 @@ if [ $REBUILD == "true" ] ; then rebuild ; fi
 if [ $DOWNLOAD == "true" ] ; then downloadImages ; fi
 if [ $WORLD == "true" ] ;  then generateWorld ; fi
 if [ $CLOUDS == "true" ] ; then generateClouds ; fi
+if [ $BUILDCHECKS == "true" ] ; then checkResults ; fi
 if [ $CLEANUP == "true" ] ; then cleanUp ; fi
+
 
 
 
