@@ -8,7 +8,14 @@ About:
 
 This script runs on Linux (maybe Mac also?) in a Bash
 (Bourne Again Shell) - Windows is not supported (by the nature of the
-script).
+script). Maybe it it works on windows as well, I don'T know, feel free
+to try, and please let me know! :)
+
+This will download the raw images from http://visibleearth.nasa.gov - 
+their server is not very fast, so I provide an alternative download
+location: https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z
+This one is much quicker! If you really want the images directly from
+NASA, then provide "nasa" to the script (see below)
 
 In the end you will have 8 world-textures in .png and .dds format.
 Generally .dds is better in performance, but it won't work on some
@@ -39,6 +46,7 @@ Possible targets are:
 
 Additionally, there are some options you could specify:
 * 1k | 2k | 4k | 8k
+* nasa
 * no-download
 * cleanup
 * rebuild
@@ -95,6 +103,13 @@ resolution
 	Lets you specify a desired resolution of the textures.
 	Possible values are 1k, 2k, 4k and 8k. If nothing is
 	specified, the script will generate all of the 4 resolutions.
+
+nasa
+	Causes the script to download directly from 
+	http://visibleearth.nasa.gov . If omitted the script will
+	download from
+	https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z
+	which is much faster!
 
 no-download
 	Causes the script to skip the download function. If you

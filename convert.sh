@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="v0.03"
+VERSION="v0.04"
 
 # make sure the script halts on error
 set -e
@@ -13,9 +13,14 @@ function showHelp
    echo "Usage:"
    echo "./convert.sh [ download world clouds 8k cleanup rebuild ]"
    echo
-   echo "* Append \"download\" to download the needed images from NASA"
+   echo "* Append \"nasa\" to download the needed images from NASA"
    echo "  -> This will download ca 2.4GB of data!"
    echo "  -> wget can continue interrupted downloads!"
+   echo "  If omitted, it will download from my server, which is a lot"
+   echo "  faster. See README for details."
+   echo "* Append \"no-download\" to the command to skip the download"
+   echo "  process alltogether. Only makes sense if you already got"
+   echo "  the necessary data."
    echo "* Append \"world\" to the command to generate the world tiles"
    echo "* Append \"clouds\" to the command to generate cloud tiles"
    echo "* Append the size of the tiles (1k, 2k, 4, 8k). If you don't"
@@ -76,6 +81,7 @@ if [ $1 == "-h" ] ; then showHelp ; fi
 ################################
 for ARG in "$@"
 do
+  if [ $ARG == "nasa" ] ; then DOWNLOAD="true" ; DL_LOCATION="NASA" ;  echo "Downloading from visibleearth.nasa.gov" ; fi
   if [ $ARG == "no-download" ] ; then DOWNLOAD="false" ; echo "Skipping the download process" ; fi
   if [ $ARG == "world" ] ; then WORLD="true" ; fi
   if [ $ARG == "clouds" ] ; then CLOUDS="true" ; fi
@@ -123,6 +129,8 @@ http://eoimages.gsfc.nasa.gov/images/imagerecords/79000/79765/dnb_land_ocean_ice
 URLS_CLOUDS="http://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57747/cloud.E.2001210.21600x21600.png
 http://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57747/cloud.W.2001210.21600x21600.png"
 
+ALTERNATE_URL="https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z"
+ALTERNATE_FILENAME="raw-data-NASA.7z"
 
 if [ -z $RESOLUTION ]
   then 
@@ -256,16 +264,36 @@ function downloadImages
   {
    echo
    echo "###################################################"
-   echo "## Downloading images from visibleearth.nasa.gov ##"
+   if [ ! -z $DL_LOCATION ]
+     then echo "## Downloading images from visibleearth.nasa.gov ##"
+     else echo "##    Downloading images from  musicchris.de     ##"
+   fi
    echo "###################################################"
-   if [ $WORLD == "true" ] ; then downloadWorld ; fi
-   if [ $CLOUDS == "true" ] ; then downloadClouds ; fi
+   if [ -z $DL_LOCATION ] ; then f=$ALTERNATE_URL ; fi
+   FILENAME=$(echo $f | sed 's@.*/@@')
+   if [ $WORLD == "true" ] 
+   then
+     if [ $DL_LOCATION == "NASA" ]
+     then
+       downloadWorld
+     fi
+   fi
+
+   if [ $CLOUDS == "true" ]
+   then
+     if [ $DL_LOCATION == "NASA" ]
+     then
+       downloadClouds 
+     fi
+   fi
+
+   if [ -z $DL_LOCATION ] ; then downloadMusicchris ; fi
   }
 
 function downloadWorld
   {
    mkdir -p input
-
+   echo "Downloading world tiles..."
    for f in $URLS_WORLD
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
@@ -276,12 +304,23 @@ function downloadWorld
 function downloadClouds
   {
    mkdir -p input
-
+   echo "Downloading cloud tiles..."
    for f in $URLS_CLOUDS
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
      wget --output-document=input/$FILENAME --continue --show-progress $f
    done
+  }
+
+function downloadMusicchris
+  {
+   mkdir -p input
+   echo "Downloading raw images... (ca 2.2 GB)"
+   wget --output-document=input/$FILENAME --continue --show-progress $ALTERNATE_URL
+   echo "Unpacking raw images..."
+   cd input
+   7z e -bt -y raw-data-NASA.7z
+   cd ..
   }
 
 function generateWorld
@@ -759,17 +798,6 @@ function checkResults
 ####    Actual program:    ####
 ###############################
 
-echo
-echo "--------------------------------------------------------------"
-echo "Remember!"
-echo "If you have new textures that you want to build, either delete"
-echo "the \"tmp\" folder, or run:"
-echo
-echo "./convert.sh cleanup"
-echo
-echo "or:"
-echo
-echo "./convert.sh rebuild world"
 echo
 echo "--------------------------------------------------------------"
 echo
