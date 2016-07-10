@@ -368,7 +368,13 @@ function generateWorld
    echo "########################################"
    if [ ! -s "tmp/nightlights_54000x27000.mpc" ]
    then
-     env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 input/dnb_land_ocean_ice.2012.54000x27000_geo.tif tmp/nightlights_54000x27000.mpc
+     env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
+       convert \
+         -monitor \
+         -limit memory 32 \
+         -limit map 32 \
+         input/dnb_land_ocean_ice.2012.54000x27000_geo.tif \
+         tmp/nightlights_54000x27000.mpc
    else echo "=> Skipping existing file: tmp/nightlights_54000x27000.mpc"
    fi
 
@@ -378,7 +384,14 @@ function generateWorld
    echo "########################"
    if [ ! -s "tmp/nightlights_64512x32256.mpc" ]
    then
-     env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 tmp/nightlights_54000x27000.mpc -resize 64512x32256  tmp/nightlights_64512x32256.mpc
+     env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
+       convert \
+         -monitor \
+         -limit memory 32 \
+         -limit map 32 \
+         tmp/nightlights_54000x27000.mpc \
+         -resize 64512x32256 \
+         tmp/nightlights_64512x32256.mpc
    else echo "=> Skipping existing file: tmp/nightlights_32256x16128.mpc"
    fi
 
@@ -388,7 +401,17 @@ function generateWorld
    echo "#############################################"
    if [ ! -s "tmp/nightlights_64512x32256_lowColorsCut.mpc" ]
    then
-     env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 tmp/nightlights_64512x32256.mpc -channel R -level 7.8%,100%,1.5 -channel G -level 13.7%,100%,1.5 -channel B -level 33%,100%,1.5 +channel tmp/nightlights_64512x32256_lowColorsCut.mpc
+     env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
+       convert \
+         -monitor \
+         -limit memory 32 \
+         -limit map 32 \
+         tmp/nightlights_64512x32256.mpc \
+         -channel R -level 7.8%,100%,1.5 \
+         -channel G -level 13.7%,100%,1.5 \
+         -channel B -level 33%,100%,1.5 \
+         +channel \
+         tmp/nightlights_64512x32256_lowColorsCut.mpc
    else echo "=> Skipping existing file: tmp/nightlights_64512x32256_lowColorsCut.mpc"
    fi
 
@@ -398,7 +421,14 @@ function generateWorld
    echo "######################################"
    if [ ! -s "tmp/night_7.mpc" ]
    then
-     convert -monitor tmp/nightlights_64512x32256_lowColorsCut.mpc -colorspace Gray -crop 16128x16128 +repage -alpha Off tmp/night_%d.mpc
+     convert \
+       -monitor \
+       tmp/nightlights_64512x32256_lowColorsCut.mpc \
+       -colorspace Gray \
+       -crop 16128x16128 \
+       +repage \
+       -alpha Off \
+       tmp/night_%d.mpc
    else echo "=> Skipping existing files: tmp/night_[0-7].mpc"
    fi
 
@@ -411,7 +441,11 @@ function generateWorld
      IM2FG $f
      if [ ! -s "tmp/night_${DEST}_neg.mpc" ]
      then
-       convert -monitor tmp/night_${f}.mpc -negate tmp/night_${DEST}_neg.mpc
+       convert \
+         -monitor \
+         tmp/night_${f}.mpc \
+         -negate \
+         tmp/night_${DEST}_neg.mpc
      else echo "=> Skipping existing file: tmp/night_${DEST}_neg.mpc"
      fi
    done
@@ -434,18 +468,34 @@ function generateWorld
         if [ $t == "C1" ]
         then
           # pick a sample pixel. The polar regions are all equally colored.
-          convert -monitor tmp/world_seamless_16128_N2.mpc -crop 1x1+1+1 -resize 16128x1164\! tmp/bluebar.mpc
+          convert \
+            -monitor \
+            tmp/world_seamless_16128_N2.mpc \
+            -crop 1x1+1+1 \
+            -resize 16128x1164\! \
+            tmp/bluebar.mpc
         fi
         if [ $t == "C1" -o $t == "D1" ]
         then
           {
            # copy the sample over to the tile:
-           convert -monitor input/world.200408.3x21600x21600.${t}.png -resize 16128x16128 tmp/bluebar.mpc -geometry +0+0 -composite tmp/world_seamless_16128_${DEST}.mpc
+           convert \
+             -monitor \
+             input/world.200408.3x21600x21600.${t}.png \
+             -resize 16128x16128 \
+             tmp/bluebar.mpc \
+             -geometry +0+0 \
+             -composite \
+             tmp/world_seamless_16128_${DEST}.mpc
            echo
           }
         else
           {
-           convert -monitor input/world.200408.3x21600x21600.${t}.png -resize 16128x16128 tmp/world_seamless_16128_${DEST}.mpc
+           convert \
+             -monitor \
+             input/world.200408.3x21600x21600.${t}.png \
+             -resize 16128x16128 \
+             tmp/world_seamless_16128_${DEST}.mpc
 	  }
 	fi
        }
@@ -461,7 +511,13 @@ function generateWorld
    do
      if [ ! -s "tmp/world_seamless_16128_${t}_composite.mpc" ]
      then
-       convert -monitor tmp/world_seamless_16128_${t}.mpc tmp/night_${t}_neg.mpc -compose CopyOpacity -composite tmp/world_seamless_16128_${t}_composite.mpc
+       convert \
+         -monitor \
+         tmp/world_seamless_16128_${t}.mpc \
+         tmp/night_${t}_neg.mpc \
+         -compose CopyOpacity \
+         -composite \
+         tmp/world_seamless_16128_${t}_composite.mpc
      else echo "=> Skipping existing file: tmp/world_seamless_16128_${t}_composite.mpc"
      fi
    done
@@ -474,7 +530,12 @@ function generateWorld
    do
      if [ ! -s "tmp/world_seams_16k_${t}_emptyBorder.mpc" ]
      then
-       convert -monitor tmp/world_seamless_16128_${t}_composite.mpc -bordercolor none -border 128 tmp/world_seams_16k_${t}_emptyBorder.mpc
+       convert \
+         -monitor \
+         tmp/world_seamless_16128_${t}_composite.mpc \
+         -bordercolor none \
+         -border 128 \
+         tmp/world_seams_16k_${t}_emptyBorder.mpc
        echo
      fi
      if [ ! -s "tmp/world_seams_16k_${t}.mpc" ]
@@ -531,11 +592,33 @@ function generateWorld
           CORNER_NAME="topLeft"
         fi
         echo
-	convert -monitor tmp/world_seams_16k_${t}_emptyBorder.mpc -crop $CROP -resize $RESIZE\! tmp/world_${t}_seam_${b}.mpc
-        convert -monitor tmp/world_seams_16k_${t}_emptyBorder.mpc -crop $CROPCORNER -resize 128x128\! tmp/world_${t}_seam_${CORNER_NAME}.mpc
-        convert -monitor tmp/world_seams_16k_${t}.mpc tmp/world_${t}_seam_${b}.mpc -geometry $POSITION -composite tmp/world_seams_16k_${t}.mpc
+	convert \
+	  -monitor \
+	  tmp/world_seams_16k_${t}_emptyBorder.mpc \
+	  -crop $CROP \
+	  -resize $RESIZE\! \
+	  tmp/world_${t}_seam_${b}.mpc
+        convert \
+          -monitor \
+          tmp/world_seams_16k_${t}_emptyBorder.mpc \
+          -crop $CROPCORNER \
+          -resize 128x128\! \
+          tmp/world_${t}_seam_${CORNER_NAME}.mpc
+        convert \
+          -monitor \
+          tmp/world_seams_16k_${t}.mpc \
+          tmp/world_${t}_seam_${b}.mpc \
+          -geometry $POSITION \
+          -composite \
+          tmp/world_seams_16k_${t}.mpc
         echo
-        convert -monitor tmp/world_seams_16k_${t}.mpc tmp/world_${t}_seam_${CORNER_NAME}.mpc -geometry $CORNER_POS -composite tmp/world_seams_16k_${t}.mpc
+        convert \
+          -monitor \
+          tmp/world_seams_16k_${t}.mpc \
+          tmp/world_${t}_seam_${CORNER_NAME}.mpc \
+          -geometry $CORNER_POS \
+          -composite \
+          tmp/world_seams_16k_${t}.mpc
         echo
        }
      done
@@ -551,10 +634,20 @@ function generateWorld
         mkdir -p output/$r
         echo
         echo "--> Writing output/${r}/pale_blue_aug_${t}.dds @ ${r}x${r}"
-	convert -monitor tmp/world_seams_16k_${t}.mpc -resize ${r}x${r} -flip -define dds:compression=dxt5 output/${r}/world_${t}.dds
+	convert \
+	  -monitor \
+	  tmp/world_seams_16k_${t}.mpc \
+	  -resize ${r}x${r} \
+	  -flip \
+	  -define dds:compression=dxt5 \
+	  output/${r}/world_${t}.dds
 	echo
 	echo "--> Writing output/${r}/pale_blue_aug_${t}.png @ ${r}x${r}"
-	convert -monitor tmp/world_seams_16k_${t}.mpc -resize ${r}x${r} output/${r}/world_${t}.png
+	convert \
+	  -monitor \
+	  tmp/world_seams_16k_${t}.mpc \
+	  -resize ${r}x${r} \
+	  output/${r}/world_${t}.png
 	echo
        }
      done
@@ -604,7 +697,13 @@ W"
    do
      if [ ! -s "tmp/cloud.T16k${t}.mpc" ]
      then
-       convert -monitor input/cloud.${t}.2001210.21600x21600.png -resize 16128x16128 -alpha copy +level-colors white tmp/cloud.T16k${t}.mpc
+       convert \
+         -monitor \
+         input/cloud.${t}.2001210.21600x21600.png \
+         -resize 16128x16128 \
+         -alpha copy \
+         +level-colors white \
+         tmp/cloud.T16k${t}.mpc
      else echo "=> Skipping existing file: tmp/cloud.T16k${t}.mpc"
      fi
    done
@@ -618,7 +717,12 @@ W"
    if [ ! -s "tmp/clouds_S2.mpc" ]
    then
     {
-     convert -monitor tmp/cloud.T16kE.mpc -crop 8064x8064 +repage tmp/clouds_%d.mpc
+     convert \
+       -monitor \
+       tmp/cloud.T16kE.mpc \
+       -crop 8064x8064 \
+       +repage \
+       tmp/clouds_%d.mpc
      N="0
 1
 2
@@ -661,7 +765,12 @@ W"
    do
      if [ ! -s "tmp/clouds_${t}_emptyBorder.mpc" ]
      then
-       convert -monitor tmp/clouds_${t}.mpc -bordercolor none -border 64 tmp/clouds_${t}_emptyBorder.mpc
+       convert \
+         -monitor \
+         tmp/clouds_${t}.mpc \
+         -bordercolor none \
+         -border 64 \
+         tmp/clouds_${t}_emptyBorder.mpc
        echo
      else echo "=> Skipping existing file: tmp/clouds_${t}_emptyBorder.mpc"
      fi
@@ -713,11 +822,33 @@ W"
           CORNER_POS="+0+0"
           CORNER_NAME="topLeft"
         fi
-        convert -monitor tmp/clouds_${t}_emptyBorder.mpc -crop $CROP -resize $RESIZE\! tmp/clouds_${t}_seam_${b}.mpc
-        convert -monitor tmp/clouds_${t}_emptyBorder.mpc -crop $CROPCORNER -resize 64x64\! tmp/clouds_${t}_seam_${CORNER_NAME}.mpc
-        convert -monitor tmp/clouds_${t}_emptyBorder.mpc tmp/clouds_${t}_seam_${b}.mpc -geometry $POSITION -composite tmp/clouds_${t}_emptyBorder.mpc
+        convert \
+          -monitor \
+          tmp/clouds_${t}_emptyBorder.mpc \
+          -crop $CROP \
+          -resize $RESIZE\! \
+          tmp/clouds_${t}_seam_${b}.mpc
+        convert \
+          -monitor \
+          tmp/clouds_${t}_emptyBorder.mpc \
+          -crop $CROPCORNER \
+          -resize 64x64\! \
+          tmp/clouds_${t}_seam_${CORNER_NAME}.mpc
+        convert \
+          -monitor \
+          tmp/clouds_${t}_emptyBorder.mpc \
+          tmp/clouds_${t}_seam_${b}.mpc \
+          -geometry $POSITION \
+          -composite \
+          tmp/clouds_${t}_emptyBorder.mpc
         echo
-        convert -monitor tmp/clouds_${t}_emptyBorder.mpc tmp/clouds_${t}_seam_${CORNER_NAME}.mpc -geometry $CORNER_POS -composite tmp/clouds_${t}_emptyBorder.mpc
+        convert \
+          -monitor \
+          tmp/clouds_${t}_emptyBorder.mpc \
+          tmp/clouds_${t}_seam_${CORNER_NAME}.mpc \
+          -geometry $CORNER_POS \
+          -composite \
+          tmp/clouds_${t}_emptyBorder.mpc
         echo
        }
      done
@@ -742,7 +873,11 @@ W"
         mkdir -p output/$r
         echo
         echo "--> Writing output/${r}/clouds_${t}.png @ ${r}x${r}"
-	convert -monitor tmp/clouds_${t}_emptyBorder.mpc -resize ${r}x${r} output/${r}/clouds_${t}.png
+	convert \
+	  -monitor \
+	  tmp/clouds_${t}_emptyBorder.mpc \
+	  -resize ${r}x${r} \
+	  output/${r}/clouds_${t}.png
        }
      done
 
@@ -798,13 +933,28 @@ function checkResults
       POS=0
       for t in 1 2 3 4
       do
-        convert -monitor check_clouds.png output/${RES}/clouds_N${t}.png -geometry +${POS}+0 -composite check_clouds.png
+        convert \
+          -monitor \
+          check_clouds.png \
+          output/${RES}/clouds_N${t}.png \
+          -geometry +${POS}+0 \
+          -composite \
+          check_clouds.png
         echo
-        convert -monitor check_clouds.png output/${RES}/clouds_S${t}.png -geometry +${POS}+${RES} -composite check_clouds.png
+        convert \
+          -monitor \
+          check_clouds.png \
+          output/${RES}/clouds_S${t}.png \
+          -geometry +${POS}+${RES} \
+          -composite \
+          check_clouds.png
         echo
         let "POS += $RES"
       done
-      mogrify -monitor -resize 4096x2048 check_clouds.png
+      mogrify \
+        -monitor \
+        -resize 4096x2048 \
+        check_clouds.png
      }
    fi
 
@@ -815,24 +965,55 @@ function checkResults
       echo
 
       echo "Creating canvas ${WIDTH}x${HEIGHT}"
-      convert -size ${WIDTH}x${HEIGHT} xc:Black -alpha on check_world.png
+      convert \
+        -size ${WIDTH}x${HEIGHT} \
+        xc:Black \
+        -alpha on \
+        check_world.png
 
       POS=0
       for t in 1 2 3 4
       do
-        convert -monitor check_world.png output/${RES}/world_N${t}.png -alpha Off -geometry +${POS}+0 -composite check_world.png
+        convert \
+          -monitor \
+          check_world.png \
+          output/${RES}/world_N${t}.png \
+          -alpha Off \
+          -geometry +${POS}+0 \
+          -composite \
+          check_world.png
         echo
-        convert -monitor check_world.png output/${RES}/world_S${t}.png -alpha Off -geometry +${POS}+${RES} -composite check_world.png
+        convert \
+          -monitor \
+          check_world.png \
+          output/${RES}/world_S${t}.png \
+          -alpha Off \
+          -geometry +${POS}+${RES} \
+          -composite \
+          check_world.png
         echo
         let "POS += $RES"
       done
-      mogrify -monitor -resize 4096x2048 check_world.png
+      mogrify \
+        -monitor \
+        -resize 4096x2048 \
+        check_world.png
 
       for f in $TILES
       do
-        convert -monitor tmp/night_${f}_neg.mpc -resize 1024x1024 -negate tmp/night_${f}_check.mpc
+        convert \
+          -monitor \
+          tmp/night_${f}_neg.mpc \
+          -resize 1024x1024 \
+          -negate \
+          tmp/night_${f}_check.mpc
       done
-      montage -monitor -mode concatenate -tile 4x tmp/night_??_check.mpc check_night.png
+      montage \
+        -monitor \
+        -mode concatenate \
+        -tile 4x \
+        tmp/night_??_check.mpc \
+        check_night.png
      }
    fi
   }
