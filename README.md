@@ -86,31 +86,31 @@ in your distro!
 ------------------------------------
 Options:
 
-world\s\s
+world<br>
 	Generates the world tiles, needed to run FG with EarthView.
 	You will find the results in output/[$resolution]/*. Copy
 	these into $FGDATA/Models/Astro/*. More about the installation
 	of these textures can be found here:
 	http://wiki.flightgear.org/Earthview#Customization
 
-clouds\s\s
+clouds<br>
 	Generates the cloud tiles, needed to run FG with EarthView.
 	The locations are the same as the other textures mentioned
 	above.
 
-resolution\s\s
+resolution<br>
 	Lets you specify a desired resolution of the textures.
 	Possible values are 1k, 2k, 4k and 8k. If nothing is
 	specified, the script will generate all of the 4 resolutions.
 
-nasa\s\s
+nasa<br>
 	Causes the script to download directly from 
 	http://visibleearth.nasa.gov . If omitted the script will
 	download from
 	https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z
 	which is much faster!
 
-no-download\s\s
+no-download<br>
 	Causes the script to skip the download function. If you
 	already have the source images, then you don't need to
 	re-download them. (About 2.4GB!)
@@ -118,20 +118,20 @@ no-download\s\s
 	NASA. ( http://visibleearth.nasa.gov/ )
 	Uses wget.
 
-cleanup\s\s
+cleanup<br>
 	Deletes the temporary files created during texture generation.
 	These can be found in tmp/
 	Note: if for some reason you later want some other resolution,
 	then it's good to have the data there. So only do this, when
 	you're quite sure that you're done.
 
-rebuild\s\s
+rebuild<br>
 	Deletes only the temporary files of the given target. So if
 	you call './convert.sh rebuild world' the script will delete
 	all corresponding temp-files of the target world, which will
 	trigger a complete regeneration (instead of skipping existing
 	files)
 
-check\s\s
+check<br>
 	Creates mosaics of the tiles, so you can look at them and see
 	if all went well.
