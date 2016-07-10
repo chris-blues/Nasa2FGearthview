@@ -141,6 +141,7 @@ if [ -z $RESOLUTION ]
 4096
 8192
 16384"
+    NO_RESOLUTION_GIVEN="true"
 fi
 
 
@@ -239,6 +240,25 @@ function cleanUp
    rm -rv tmp/*
   }
 
+function prettyTime
+  {
+   if [ $SECS -gt 60 ]
+     then
+     let "MINUTES = $SECS / 60"
+   fi
+   if [ $MINUTES -gt 60 ]
+     then
+     let "HOURS = $MINUTES / 60"
+   fi
+   if [ $HOURS -gt 24 ]
+     then
+     let "DAYS = $HOURS / 24"
+   fi
+   let "HOURS = $HOURS - ( $DAYS * 24 )"
+   let "MINUTES = $MINUTES - ( $HOURS * 60 )"
+   let "SECS = $SECS - ( $MINUTES * 60 )"
+  }
+
 function NasaToFG
   {
    if [ $1 == "A1" ] ; then DEST="N1" ; fi
@@ -328,6 +348,7 @@ function downloadMusicchris
 
 function generateWorld
   {
+   STARTTIME=$(date +%s)
    echo
    echo "################################"
    echo "####    Processing World    ####"
@@ -537,6 +558,7 @@ function generateWorld
 	echo
        }
      done
+
      echo
      echo "World $t [ done ]"
      echo
@@ -547,6 +569,10 @@ function generateWorld
    echo "###############################"
    echo "####    World: [ done ]    ####"
    echo "###############################"
+   ENDTIME=$(date +%s)
+   let "SECS = $ENDTIME - $STARTTIME"
+   prettyTime
+   echo "Processing time: $DAYS d, $HOURS h, $MINUTES m, $SECS s"
 
    if [ $BUILDCHECKS == "true" ]
      then
@@ -557,6 +583,7 @@ function generateWorld
 
 function generateClouds
   {
+   STARTTIME=$(date +%s)
    echo
    echo "#################################"
    echo "####    Processing clouds    ####"
@@ -705,7 +732,12 @@ W"
        {
         if [ $r -eq 16384 ]
           then
-            continue
+            if [ $NO_RESOLUTION_GIVEN == "true" ]
+              then
+                continue
+	      else
+	        r=8192
+	    fi
 	fi
         mkdir -p output/$r
         echo
@@ -713,6 +745,7 @@ W"
 	convert -monitor tmp/clouds_${t}_emptyBorder.mpc -resize ${r}x${r} output/${r}/clouds_${t}.png
        }
      done
+
      echo
      echo "Cloud $t [ done ]"
      echo
@@ -720,6 +753,11 @@ W"
    echo "################################"
    echo "####    Clouds: [ done ]    ####"
    echo "################################"
+
+   ENDTIME=$(date +%s)
+   let "SECS = $ENDTIME - $STARTTIME"
+   prettyTime
+   echo "Processing time: $DAYS d, $HOURS h, $MINUTES m, $SECS s"
 
    if [ $BUILDCHECKS == "true" ]
      then

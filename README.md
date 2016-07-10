@@ -44,7 +44,7 @@ Possible targets are:
 
 Additionally, there are some options you could specify (further
 explained below):
-* 1k | 2k | 4k | 8k
+* 1k | 2k | 4k | 8k | 16k
 * nasa
 * no-download
 * cleanup
@@ -96,12 +96,13 @@ Options:
 *clouds*<br>
 	Generates the cloud tiles, needed to run FG with EarthView.
 	The locations are the same as the other textures mentioned
-	above.
+	above. Note that clouds are only available with up to 8k
+	resolution, due to the available data at NASA.
 
 *resolution*<br>
 	Lets you specify a desired resolution of the textures.
-	Possible values are 1k, 2k, 4k and 8k. If nothing is
-	specified, the script will generate all of the 4 resolutions.
+	Possible values are 1k, 2k, 4k, 8k and 16k. If nothing is
+	specified, the script will generate all of the 5 resolutions.
 
 *nasa*<br>
 	Causes the script to download directly from 
