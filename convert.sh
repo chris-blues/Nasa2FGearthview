@@ -23,8 +23,9 @@ function showHelp
    echo "  the necessary data."
    echo "* Append \"world\" to the command to generate the world tiles"
    echo "* Append \"clouds\" to the command to generate cloud tiles"
-   echo "* Append the size of the tiles (1k, 2k, 4, 8k). If you don't"
-   echo "  pass a resolution, then all resolutions will be generated."
+   echo "* Append the size of the tiles (1k, 2k, 4, 8k, 16k). If you"
+   echo "  don't pass a resolution, then all resolutions will be"
+   echo "  generated."
    echo "* Append \"cleanup\" to delete all temporary files in tmp/"
    echo "  Same as \"./convert.sh world clouds rebuild\""
    echo "  Useful if the source files have changed."
@@ -89,6 +90,7 @@ do
   if [ $ARG == "2k" ] ; then RESOLUTION="2048" ; fi
   if [ $ARG == "4k" ] ; then RESOLUTION="4096" ; fi
   if [ $ARG == "8k" ] ; then RESOLUTION="8192" ; fi
+  if [ $ARG == "16k" ] ; then RESOLUTION="16384" ; fi
   if [ $ARG == "cleanup" ] ; then CLEANUP="true" ; fi
   if [ $ARG == "rebuild" ] ; then REBUILD="true" ; fi
   if [ $ARG == "check" ] ; then BUILDCHECKS="true" ; fi
@@ -133,7 +135,7 @@ ALTERNATE_URL="https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z"
 ALTERNATE_FILENAME="raw-data-NASA.7z"
 
 if [ -z $RESOLUTION ]
-  then 
+  then
     RESOLUTION="1024
 2048
 4096
@@ -353,9 +355,9 @@ function generateWorld
    echo "########################"
    echo "## Resize nightlights ##"
    echo "########################"
-   if [ ! -s "tmp/nightlights_32256x16128.mpc" ]
+   if [ ! -s "tmp/nightlights_64512x32256.mpc" ]
    then
-     env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 tmp/nightlights_54000x27000.mpc -resize 32256x16128 tmp/nightlights_32256x16128.mpc
+     env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 tmp/nightlights_54000x27000.mpc -resize 64512x32256  tmp/nightlights_64512x32256.mpc
    else echo "=> Skipping existing file: tmp/nightlights_32256x16128.mpc"
    fi
 
@@ -363,10 +365,10 @@ function generateWorld
    echo "#############################################"
    echo "## Filter out low colors (continents, ice) ##"
    echo "#############################################"
-   if [ ! -s "tmp/nightlights_32256x16128_lowColorsCut.mpc" ]
+   if [ ! -s "tmp/nightlights_64512x32256_lowColorsCut.mpc" ]
    then
-     env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 tmp/nightlights_32256x16128.mpc -channel R -level 7.8%,100%,1.5 -channel G -level 13.7%,100%,1.5 -channel B -level 33%,100%,1.5 +channel tmp/nightlights_32256x16128_lowColorsCut.mpc
-   else echo "=> Skipping existing file: tmp/nightlights_32256x16128_lowColorsCut.mpc"
+     env MAGICK_TMPDIR=${PWD}/tmp nice -10 convert -monitor -limit memory 32 -limit map 32 tmp/nightlights_64512x32256.mpc -channel R -level 7.8%,100%,1.5 -channel G -level 13.7%,100%,1.5 -channel B -level 33%,100%,1.5 +channel tmp/nightlights_64512x32256_lowColorsCut.mpc
+   else echo "=> Skipping existing file: tmp/nightlights_64512x32256_lowColorsCut.mpc"
    fi
 
    echo
@@ -375,7 +377,7 @@ function generateWorld
    echo "######################################"
    if [ ! -s "tmp/night_7.mpc" ]
    then
-     convert -monitor tmp/nightlights_32256x16128_lowColorsCut.mpc -colorspace Gray -crop 8064x8064 +repage -alpha Off tmp/night_%d.mpc
+     convert -monitor tmp/nightlights_64512x32256_lowColorsCut.mpc -colorspace Gray -crop 16128x16128 +repage -alpha Off tmp/night_%d.mpc
    else echo "=> Skipping existing files: tmp/night_[0-7].mpc"
    fi
 
@@ -399,34 +401,34 @@ function generateWorld
    echo "##############################"
    echo
    echo "############################################"
-   echo "## Resize the NASA-Originals to 8k-(2*64) ##"
+   echo "## Resize the NASA-Originals to 16k-(2*128) ##"
    echo "############################################"
    for t in $NASA
    do
      NasaToFG $t
-     if [ ! -s "tmp/world_seamless_8064_${DEST}.mpc" ]
+     if [ ! -s "tmp/world_seamless_16128_${DEST}.mpc" ]
      then
        {
         ## Workaround for tiles N3 and N4 - there's a gray failure area at the top border - let's remove it!
         if [ $t == "C1" ]
         then
           # pick a sample pixel. The polar regions are all equally colored.
-          convert -monitor tmp/world_seamless_8064_N2.mpc -crop 1x1+1+1 -resize 8192x582\! tmp/bluebar.mpc
+          convert -monitor tmp/world_seamless_16128_N2.mpc -crop 1x1+1+1 -resize 16128x1164\! tmp/bluebar.mpc
         fi
         if [ $t == "C1" -o $t == "D1" ]
         then
           {
            # copy the sample over to the tile:
-           convert -monitor input/world.200408.3x21600x21600.${t}.png -resize 8064x8064 tmp/bluebar.mpc -geometry +0+0 -composite tmp/world_seamless_8064_${DEST}.mpc
+           convert -monitor input/world.200408.3x21600x21600.${t}.png -resize 16128x16128 tmp/bluebar.mpc -geometry +0+0 -composite tmp/world_seamless_16128_${DEST}.mpc
            echo
           }
         else
           {
-           convert -monitor input/world.200408.3x21600x21600.${t}.png -resize 8064x8064 tmp/world_seamless_8064_${DEST}.mpc
+           convert -monitor input/world.200408.3x21600x21600.${t}.png -resize 16128x16128 tmp/world_seamless_16128_${DEST}.mpc
 	  }
 	fi
        }
-     else echo "=> Skipping existing file: tmp/world_seamless_8064_${DEST}.mpc"
+     else echo "=> Skipping existing file: tmp/world_seamless_16128_${DEST}.mpc"
      fi
    done
 
@@ -436,29 +438,29 @@ function generateWorld
    echo "##################################################"
    for t in $TILES
    do
-     if [ ! -s "tmp/world_seamless_8064_${t}_composite.mpc" ]
+     if [ ! -s "tmp/world_seamless_16128_${t}_composite.mpc" ]
      then
-       convert -monitor tmp/world_seamless_8064_${t}.mpc tmp/night_${t}_neg.mpc -compose CopyOpacity -composite tmp/world_seamless_8064_${t}_composite.mpc
-     else echo "=> Skipping existing file: tmp/world_seamless_8064_${t}_composite.mpc"
+       convert -monitor tmp/world_seamless_16128_${t}.mpc tmp/night_${t}_neg.mpc -compose CopyOpacity -composite tmp/world_seamless_16128_${t}_composite.mpc
+     else echo "=> Skipping existing file: tmp/world_seamless_16128_${t}_composite.mpc"
      fi
    done
 
    echo
-   echo "####################################"
-   echo "## Put a 64px border to each side ##"
-   echo "####################################"
+   echo "#####################################"
+   echo "## Put a 128px border to each side ##"
+   echo "#####################################"
    for t in $TILES
    do
-     if [ ! -s "tmp/world_seams_8k_${t}_emptyBorder.mpc" ]
+     if [ ! -s "tmp/world_seams_16k_${t}_emptyBorder.mpc" ]
      then
-       convert -monitor tmp/world_seamless_8064_${t}_composite.mpc -bordercolor none -border 64 tmp/world_seams_8k_${t}_emptyBorder.mpc
+       convert -monitor tmp/world_seamless_16128_${t}_composite.mpc -bordercolor none -border 128 tmp/world_seams_16k_${t}_emptyBorder.mpc
        echo
      fi
-     if [ ! -s "tmp/world_seams_8k_${t}.mpc" ]
+     if [ ! -s "tmp/world_seams_16k_${t}.mpc" ]
      then
-       cp tmp/world_seams_8k_${t}_emptyBorder.mpc tmp/world_seams_8k_${t}.mpc
-       cp tmp/world_seams_8k_${t}_emptyBorder.cache tmp/world_seams_8k_${t}.cache
-     else echo "=> Skipping existing file: tmp/world_seams_8k_${t}.mpc"
+       cp tmp/world_seams_16k_${t}_emptyBorder.mpc tmp/world_seams_16k_${t}.mpc
+       cp tmp/world_seams_16k_${t}_emptyBorder.cache tmp/world_seams_16k_${t}.cache
+     else echo "=> Skipping existing file: tmp/world_seams_16k_${t}.mpc"
      fi
    done
 
@@ -477,7 +479,7 @@ function generateWorld
           RESIZE=$HORIZ_RESIZE
           POSITION=$POS_TOP
           CROPCORNER=$CROP_TOPRIGHT
-          CORNER_POS="+8128+0"
+          CORNER_POS="+16256+0"
           CORNER_NAME="topRight"
         fi
         if [ $b == "right" ]
@@ -486,7 +488,7 @@ function generateWorld
           RESIZE=$VERT_RESIZE
           POSITION=$POS_RIGHT
           CROPCORNER=$CROP_BOTTOMRIGHT
-          CORNER_POS="+8128+8128"
+          CORNER_POS="+16256+16256"
           CORNER_NAME="bottomRight"
         fi
         if [ $b == "bottom" ]
@@ -495,7 +497,7 @@ function generateWorld
           RESIZE=$HORIZ_RESIZE
           POSITION=$POS_BOTTOM
           CROPCORNER=$CROP_BOTTOMLEFT
-          CORNER_POS="+0+8128"
+          CORNER_POS="+0+16256"
           CORNER_NAME="bottomLeft"
         fi
         if [ $b == "left" ]
@@ -508,11 +510,11 @@ function generateWorld
           CORNER_NAME="topLeft"
         fi
         echo
-	convert -monitor tmp/world_seams_8k_${t}_emptyBorder.mpc -crop $CROP -resize $RESIZE\! tmp/world_${t}_seam_${b}.mpc
-        convert -monitor tmp/world_seams_8k_${t}_emptyBorder.mpc -crop $CROPCORNER -resize 64x64\! tmp/world_${t}_seam_${CORNER_NAME}.mpc
-        convert -monitor tmp/world_seams_8k_${t}.mpc tmp/world_${t}_seam_${b}.mpc -geometry $POSITION -composite tmp/world_seams_8k_${t}.mpc
+	convert -monitor tmp/world_seams_16k_${t}_emptyBorder.mpc -crop $CROP -resize $RESIZE\! tmp/world_${t}_seam_${b}.mpc
+        convert -monitor tmp/world_seams_16k_${t}_emptyBorder.mpc -crop $CROPCORNER -resize 128x128\! tmp/world_${t}_seam_${CORNER_NAME}.mpc
+        convert -monitor tmp/world_seams_16k_${t}.mpc tmp/world_${t}_seam_${b}.mpc -geometry $POSITION -composite tmp/world_seams_16k_${t}.mpc
         echo
-        convert -monitor tmp/world_seams_8k_${t}.mpc tmp/world_${t}_seam_${CORNER_NAME}.mpc -geometry $CORNER_POS -composite tmp/world_seams_8k_${t}.mpc
+        convert -monitor tmp/world_seams_16k_${t}.mpc tmp/world_${t}_seam_${CORNER_NAME}.mpc -geometry $CORNER_POS -composite tmp/world_seams_16k_${t}.mpc
         echo
        }
      done
@@ -528,10 +530,10 @@ function generateWorld
         mkdir -p output/$r
         echo
         echo "--> Writing output/${r}/pale_blue_aug_${t}.dds @ ${r}x${r}"
-	convert -monitor tmp/world_seams_8k_${t}.mpc -resize ${r}x${r} -flip -define dds:compression=dxt5 output/${r}/pale_blue_aug_${t}.dds
+	convert -monitor tmp/world_seams_16k_${t}.mpc -resize ${r}x${r} -flip -define dds:compression=dxt5 output/${r}/world_${t}.dds
 	echo
 	echo "--> Writing output/${r}/pale_blue_aug_${t}.png @ ${r}x${r}"
-	convert -monitor tmp/world_seams_8k_${t}.mpc -resize ${r}x${r} output/${r}/pale_blue_aug_${t}.png
+	convert -monitor tmp/world_seams_16k_${t}.mpc -resize ${r}x${r} output/${r}/world_${t}.png
 	echo
        }
      done
@@ -701,6 +703,10 @@ W"
      for r in $RESOLUTION
      do
        {
+        if [ $r -eq 16384 ]
+          then
+            continue
+	fi
         mkdir -p output/$r
         echo
         echo "--> Writing output/${r}/clouds_${t}.png @ ${r}x${r}"
@@ -730,7 +736,7 @@ function checkResults
    echo "##############################################"
    echo
 
-   RES=8192
+   RES=16384
    for r in $RESOLUTION
    do
      if [ $r -le $RES ]
@@ -776,9 +782,9 @@ function checkResults
       POS=0
       for t in 1 2 3 4
       do
-        convert -monitor check_world.png output/${RES}/pale_blue_aug_N${t}.png -alpha Off -geometry +${POS}+0 -composite check_world.png
+        convert -monitor check_world.png output/${RES}/world_N${t}.png -alpha Off -geometry +${POS}+0 -composite check_world.png
         echo
-        convert -monitor check_world.png output/${RES}/pale_blue_aug_S${t}.png -alpha Off -geometry +${POS}+${RES} -composite check_world.png
+        convert -monitor check_world.png output/${RES}/world_S${t}.png -alpha Off -geometry +${POS}+${RES} -composite check_world.png
         echo
         let "POS += $RES"
       done
@@ -806,7 +812,7 @@ echo "Processing starts..."
 echo
 printf "Target:     "
 if [ $CLOUDS == "true" ] ; then printf "clouds " ; fi
-if [ $WORLD == "true" ] ;  then printf "world" ; fi
+if [ $WORLD == "true" ] ;  then printf "world " ; fi
 echo
 printf "Resolution: "
 for r in $RESOLUTION ; do printf "%sx%s " $r $r ; done
