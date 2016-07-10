@@ -255,11 +255,11 @@ function prettyTime
      let "DAYS = $HOURS / 24"
    fi
    let "HOURS = $HOURS - ( $DAYS * 24 )"
-   let "MINUTES = $MINUTES - ( $HOURS * 60 )"
-   let "SECS = $SECS - ( $MINUTES * 60 )"
+   let "MINUTES = $MINUTES - ( ( ( $DAYS * 24 ) + $HOURS ) * 60 )"
+   let "SECS = $SECS - ( ( ( ( ( $DAYS * 24 ) + $HOURS ) * 60 ) + $MINUTES ) * 60 )"
   }
 
-function NasaToFG
+function NASA2FG
   {
    if [ $1 == "A1" ] ; then DEST="N1" ; fi
    if [ $1 == "B1" ] ; then DEST="N2" ; fi
@@ -426,7 +426,7 @@ function generateWorld
    echo "############################################"
    for t in $NASA
    do
-     NasaToFG $t
+     NASA2FG $t
      if [ ! -s "tmp/world_seamless_16128_${DEST}.mpc" ]
      then
        {
