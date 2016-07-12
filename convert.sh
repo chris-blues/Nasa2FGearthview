@@ -86,6 +86,7 @@ do
   if [ $ARG == "no-download" ] ; then DOWNLOAD="false" ; echo "Skipping the download process" ; fi
   if [ $ARG == "world" ] ; then WORLD="true" ; fi
   if [ $ARG == "clouds" ] ; then CLOUDS="true" ; fi
+  if [ $ARG == "all" ] ; then WORLD="true" ; CLOUDS="true" ; fi
   if [ $ARG == "1k" ] ; then RESOLUTION="1024" ; fi
   if [ $ARG == "2k" ] ; then RESOLUTION="2048" ; fi
   if [ $ARG == "4k" ] ; then RESOLUTION="4096" ; fi
@@ -179,25 +180,6 @@ right
 bottom
 left"
 
-CROP_TOP="16128x1+128+128"
-CROP_RIGHT="1x16128+16254+128"
-CROP_BOTTOM="16128x1+128+16254"
-CROP_LEFT="1x16128+128+128"
-CROP_TOPLEFT="1x1+128+128"
-CROP_TOPRIGHT="1x1+16254+128"
-CROP_BOTTOMRIGHT="1x1+16254+16254"
-CROP_BOTTOMLEFT="1x1+128+16254"
-
-
-## HORIZ meaning a horizontal bar, like the one on top
-HORIZ_RESIZE="16128x128"
-VERT_RESIZE="128x16128"
-
-POS_TOP="+128+0"
-POS_RIGHT="+16256+128"
-POS_BOTTOM="+128+16254"
-POS_LEFT="+0+128"
-
 
 #################
 ##  FUNCTIONS  ##
@@ -268,8 +250,12 @@ function getProcessingTime
      then SECS=0
      else let "SECS = $ENDTIME - $LASTTIME"
    fi
-   echo "Overall processing time: $SECS s"
-   echo "Overall processing time: $DAYS d, $HOURS h, $MINUTES m, $SECS s"
+   prettyTime
+   OUTPUTSTRING="${SECS}s"
+   if [ $MINUTES -gt 0 ] ; then OUTPUTSTRING="${MINUTES}m, ${SECS}s" ; fi
+   if [ $HOURS -gt 0 ] ; then OUTPUTSTRING="${HOURS}h, ${MINUTES}m, ${SECS}s" ; fi
+   if [ $DAYS -gt 0 ] ; then OUTPUTSTRING="${DAYS}d, ${HOURS}h, ${MINUTES}m, ${SECS}s" ; fi
+   echo "Processing time: $OUTPUTSTRING"
    LASTTIME=$ENDTIME
   }
 
@@ -382,7 +368,6 @@ function generateWorld
    echo "########################################"
    if [ ! -s "tmp/nightlights_54000x27000.mpc" ]
    then
-     env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
        convert \
          -monitor \
          -limit memory 32 \
@@ -392,6 +377,7 @@ function generateWorld
    else echo "=> Skipping existing file: tmp/nightlights_54000x27000.mpc"
    fi
    LASTTIME=$STARTTIME
+   # 1m, 59s
    getProcessingTime
 
    echo
@@ -400,7 +386,6 @@ function generateWorld
    echo "########################"
    if [ ! -s "tmp/nightlights_64512x32256.mpc" ]
    then
-     env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
        convert \
          -monitor \
          -limit memory 32 \
@@ -410,7 +395,7 @@ function generateWorld
          tmp/nightlights_64512x32256.mpc
    else echo "=> Skipping existing file: tmp/nightlights_32256x16128.mpc"
    fi
-   # ca 5h
+   # 3h, 47m, 29s
    getProcessingTime
 
    echo
@@ -419,7 +404,6 @@ function generateWorld
    echo "#############################################"
    if [ ! -s "tmp/nightlights_64512x32256_lowColorsCut.mpc" ]
    then
-     env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
        convert \
          -monitor \
          -limit memory 32 \
@@ -432,16 +416,15 @@ function generateWorld
          tmp/nightlights_64512x32256_lowColorsCut.mpc
    else echo "=> Skipping existing file: tmp/nightlights_64512x32256_lowColorsCut.mpc"
    fi
-   # ca 1.2h
+   # 1h, 8m, 52s
    getProcessingTime
 
    echo
-   echo "######################################"
-   echo "## cut nightlight images into tiles ##"
-   echo "######################################"
+   echo "#####################################"
+   echo "## cut nightlight image into tiles ##"
+   echo "#####################################"
    if [ ! -s "tmp/night_7.mpc" ]
    then
-     env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
      convert \
        -monitor \
        -limit memory 32 \
@@ -453,7 +436,7 @@ function generateWorld
        tmp/night_%d.mpc
    else echo "=> Skipping existing files: tmp/night_[0-7].mpc"
    fi
-   # ca 40min
+   # 41m, 43s
    getProcessingTime
 
    echo
@@ -465,7 +448,6 @@ function generateWorld
      IM2FG $f
      if [ ! -s "tmp/night_${DEST}_neg.mpc" ]
      then
-       env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
        convert \
          -monitor \
          tmp/night_${f}.mpc \
@@ -474,7 +456,7 @@ function generateWorld
      else echo "=> Skipping existing file: tmp/night_${DEST}_neg.mpc"
      fi
    done
-   # ca 5min
+   # 5m, 33s
    getProcessingTime
 
    echo
@@ -495,7 +477,6 @@ function generateWorld
         if [ $t == "C1" ]
         then
           # pick a sample pixel. The polar regions are all equally colored.
-          env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
           convert \
             -monitor \
             -limit memory 32 \
@@ -509,7 +490,6 @@ function generateWorld
         then
           {
            # copy the sample over to the tile:
-           env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
            convert \
              -monitor \
              -limit memory 32 \
@@ -524,7 +504,6 @@ function generateWorld
           }
         else
           {
-           env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
            convert \
              -monitor \
              -limit memory 32 \
@@ -538,6 +517,7 @@ function generateWorld
      else echo "=> Skipping existing file: tmp/world_seamless_16128_${DEST}.mpc"
      fi
    done
+   # 3h, 12m, 9s
    getProcessingTime
 
    echo
@@ -548,7 +528,6 @@ function generateWorld
    do
      if [ ! -s "tmp/world_seamless_16128_${t}_composite.mpc" ]
      then
-       env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
        convert \
          -monitor \
          tmp/world_seamless_16128_${t}.mpc \
@@ -559,6 +538,7 @@ function generateWorld
      else echo "=> Skipping existing file: tmp/world_seamless_16128_${t}_composite.mpc"
      fi
    done
+   # 11m, 26s
    getProcessingTime
 
    echo
@@ -569,7 +549,6 @@ function generateWorld
    do
      if [ ! -s "tmp/world_seams_16k_${t}_emptyBorder.mpc" ]
      then
-       env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
        convert \
          -monitor \
          tmp/world_seamless_16128_${t}_composite.mpc \
@@ -585,12 +564,32 @@ function generateWorld
      else echo "=> Skipping existing file: tmp/world_seams_16k_${t}.mpc"
      fi
    done
+   # 11m, 24s
    getProcessingTime
 
    echo
    echo "######################################################"
    echo "## crop borderline pixels and propagate to the edge ##"
    echo "######################################################"
+
+   CROP_TOP="16128x1+128+128"
+   CROP_RIGHT="1x16128+16256+128"
+   CROP_BOTTOM="16128x1+128+16256"
+   CROP_LEFT="1x16128+128+128"
+   CROP_TOPLEFT="1x1+128+128"
+   CROP_TOPRIGHT="1x1+16256+128"
+   CROP_BOTTOMRIGHT="1x1+16256+16256"
+   CROP_BOTTOMLEFT="1x1+128+16256"
+
+   ## HORIZ meaning a horizontal bar, like the one on top
+   HORIZ_RESIZE="16128x128"
+   VERT_RESIZE="128x16128"
+
+   POS_TOP="+128+0"
+   POS_RIGHT="+16256+128"
+   POS_BOTTOM="+128+16256"
+   POS_LEFT="+0+128"
+
    for t in $TILES
    do
      if [ ! -s "tmp/world_16k_done_${t}.mpc" ]
@@ -635,21 +634,18 @@ function generateWorld
           CORNER_NAME="topLeft"
         fi
         echo
-	env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
 	convert \
 	  -monitor \
 	  tmp/world_seams_16k_${t}_emptyBorder.mpc \
 	  -crop $CROP \
 	  -resize $RESIZE\! \
 	  tmp/world_${t}_seam_${b}.mpc
-        env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
         convert \
           -monitor \
           tmp/world_seams_16k_${t}_emptyBorder.mpc \
           -crop $CROPCORNER \
           -resize 128x128\! \
           tmp/world_${t}_seam_${CORNER_NAME}.mpc
-        env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
         convert \
           -monitor \
           tmp/world_seams_16k_${t}.mpc \
@@ -658,7 +654,6 @@ function generateWorld
           -composite \
           tmp/world_seams_16k_${t}.mpc
         echo
-        env MAGICK_TMPDIR=${PWD}/tmp nice -10 \
         convert \
           -monitor \
           tmp/world_seams_16k_${t}.mpc \
@@ -670,13 +665,14 @@ function generateWorld
        }
      done
      echo
-     mv -v tmp/world_seams_16k_${t}.mpc tmp/world_16k_done_${t}.mpc
-     mv -v tmp/world_seams_16k_${t}.cache tmp/world_16k_done_${t}.cache
+     cp -v tmp/world_seams_16k_${t}.mpc tmp/world_16k_done_${t}.mpc
+     cp -v tmp/world_seams_16k_${t}.cache tmp/world_16k_done_${t}.cache
 
      else echo "=> Skipping existing file: tmp/world_16k_done_${t}.mpc"
      fi
 
   done
+  # 37m, 6s
   getProcessingTime
 
   for t in $TILES
@@ -719,6 +715,10 @@ function generateWorld
    echo "###############################"
    echo "####    World: [ done ]    ####"
    echo "###############################"
+   # 2h, 19m, 7s
+   # Overall processing time: 44089 s
+   # Overall processing time: 0 d, 2 h, 19 m, 7 s
+
    getProcessingTime
    echo
    if [ $STARTTIME -eq $ENDTIME ]
@@ -737,7 +737,7 @@ function generateWorld
 
 function generateClouds
   {
-   STARTTIME=$(date +%s)
+   if [ -z $STARTTIME ] ; then STARTTIME=$(date +%s) ; fi
    echo
    echo "#################################"
    echo "####    Processing clouds    ####"
@@ -769,6 +769,7 @@ W"
      fi
    done
    echo
+   # 6m, 4s
    LASTTIME=$STARTTIME
    getProcessingTime
 
@@ -804,7 +805,12 @@ W"
    if [ ! -s "tmp/clouds_S2.mpc" ]
    then
     {
-     convert -monitor tmp/cloud.T16kW.mpc -crop 8064x8064 +repage tmp/clouds_%d.mpc
+     convert \
+       -monitor \
+       tmp/cloud.T16kW.mpc \
+       -crop 8064x8064 \
+       +repage \
+       tmp/clouds_%d.mpc
      echo
      for t in $N
      do
@@ -818,6 +824,7 @@ W"
     }
    else echo "=> Skipping existing files: tmp/clouds_[N1-S2].mpc"
    fi
+   # 1m, 30s
    getProcessingTime
 
    echo
@@ -839,12 +846,32 @@ W"
      fi
    done
    echo
+   # 1m, 44s
    getProcessingTime
 
    echo
    echo "#######################################"
    echo "## propagate last pixels to the edge ##"
    echo "#######################################"
+
+   CROP_TOP="8064x1+64+64"
+   CROP_RIGHT="1x8064+8128+64"
+   CROP_BOTTOM="8064x1+64+8128"
+   CROP_LEFT="1x8064+64+64"
+   CROP_TOPLEFT="1x1+64+64"
+   CROP_TOPRIGHT="1x1+8128+64"
+   CROP_BOTTOMRIGHT="1x1+8128+8128"
+   CROP_BOTTOMLEFT="1x1+64+8128"
+
+   ## HORIZ meaning a horizontal bar, like the one on top
+   HORIZ_RESIZE="8064x64"
+   VERT_RESIZE="64x8064"
+
+   POS_TOP="+64+0"
+   POS_RIGHT="+8128+64"
+   POS_BOTTOM="+64+8128"
+   POS_LEFT="+0+64"
+
    for t in $TILES
    do
      for b in $BORDERS
@@ -917,8 +944,12 @@ W"
        }
      done
      echo
-     getProcessingTime
+   done
+   # 2m, 34s
+   getProcessingTime
 
+   for t in $TILES
+   do
      echo
      echo "#############################"
      echo "## Final output of tile $t ##"
@@ -954,6 +985,8 @@ W"
    echo "####    Clouds: [ done ]    ####"
    echo "################################"
 
+   # 7m, 4s
+   #
    getProcessingTime
    echo
    if [ $STARTTIME -eq $ENDTIME ]

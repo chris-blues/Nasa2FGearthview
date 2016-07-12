@@ -82,6 +82,10 @@ Depending on your distro, the package names might differ slightly! Use
 a search engine of your choice to find out, how the packages are named
 in your distro!
 
+You may want to check:
+
+$ apt search imagemagick
+
 
 ------------------------------------
 Options:
