@@ -297,7 +297,7 @@ function downloadImages
      else echo "##    Downloading images from  musicchris.de     ##" | tee -a $LOGFILE_GENERAL
    fi
    echo "###################################################" | tee -a $LOGFILE_GENERAL
-   if [ -z $DL_LOCATION ] ; then f=$ALTERNATE_URL ; fi
+   if [ -z $DL_LOCATION ] ; then f=$ALTERNATE_URL ; DL_LOCATION="musicchris.de" ; fi
    FILENAME=$(echo $f | sed 's@.*/@@')
    if [ $WORLD == "true" ] 
    then
@@ -315,7 +315,7 @@ function downloadImages
      fi
    fi
 
-   if [ -z $DL_LOCATION ] ; then downloadMusicchris ; fi
+   if [ $DL_LOCATION == "musicchris.de" ] ; then downloadMusicchris ; fi
   }
 
 function downloadWorld
