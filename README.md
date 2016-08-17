@@ -41,6 +41,7 @@ This will show a help text, since you didn't specify any target(s).
 Possible targets are:
 * world
 * clouds
+* all
 
 Additionally, there are some options you could specify (further
 explained below):
