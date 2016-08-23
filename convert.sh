@@ -344,7 +344,10 @@ function downloadMusicchris
   {
    mkdir -p input
    echo "Downloading raw images... (ca 2.2 GB)" | tee -a $LOGFILE_GENERAL
-   wget --output-document=input/$FILENAME --continue --show-progress $ALTERNATE_URL 2>> $LOGFILE_GENERAL
+   for p in 1 2 3 4 5
+   do
+     wget --output-document=input/${FILENAME}.00${p} --continue --show-progress $ALTERNATE_URL | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
+   done
    echo "Unpacking raw images..." | tee -a $LOGFILE_GENERAL
    cd input
    7z e -bt -y raw-data-NASA.7z 2>> $LOGFILE_GENERAL
@@ -1353,10 +1356,6 @@ echo | tee -a $LOGFILE_GENERAL
 echo "--------------------------------------------------------------" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
 echo | tee -a $LOGFILE_GENERAL
 
-for r in $RESOLUTION
-do
-  mkdir -p output/$r
-done
 
 if [ $REBUILD == "true" ] ; then rebuild ; fi
 if [ $DOWNLOAD == "true" ] ; then downloadImages ; fi
