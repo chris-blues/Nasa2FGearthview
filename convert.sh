@@ -23,6 +23,8 @@ function showHelp
    echo "  the necessary data."
    echo "* Append \"world\" to the command to generate the world tiles"
    echo "* Append \"clouds\" to the command to generate cloud tiles"
+   echo "* Append \"all\" to the command to generate both - world and"
+   echo "  clouds"
    echo "* Append the size of the tiles (1k, 2k, 4, 8k, 16k). If you"
    echo "  don't pass a resolution, then all resolutions will be"
    echo "  generated."
