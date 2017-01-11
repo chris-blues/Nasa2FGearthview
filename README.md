@@ -2,6 +2,11 @@
 A bash-script to convert NASA satellite images to ready-to-use
 textures for FG's EarthView using ImageMagick.
 
+For info about FGearthview, see the forum thread:
+  https://forum.flightgear.org/viewtopic.php?f=6&t=15754
+or this FG-wiki-page:
+  http://wiki.flightgear.org/Earthview
+
 
 ------------------------------------
 About:
