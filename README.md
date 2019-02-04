@@ -4,6 +4,7 @@ textures for FG's EarthView using ImageMagick.
 
 For info about FGearthview, see the forum thread:
   https://forum.flightgear.org/viewtopic.php?f=6&t=15754
+  
 or this FG-wiki-page:
   http://wiki.flightgear.org/Earthview
 
@@ -44,7 +45,9 @@ Installation and usage:
 
 Simply copy "convert.sh" into a folder of your liking and run it:
 
-$ ./convert.sh
+```bash
+./convert.sh
+```
 
 This will show a help text, since you didn't specify any target(s).
 Possible targets are:
@@ -63,7 +66,9 @@ explained below):
 
 So your call could look sth like this:
 
-$ ./convert.sh world no-download cleanup 8k
+```bash
+./convert.sh world no-download cleanup 8k
+```
 
 
 ------------------------------------
@@ -79,9 +84,13 @@ let it run over night - your computer might become unresponsive from
 time to time, due to the heavy CPU and memory load, which tends to
 occur, when converting 54000x27000 images. ;-)
 I also recommend to deactivate swapping!
-  $ sudo swapoff -a
+```bash
+  sudo swapoff -a
+ ```
 To reactivate swapping do:
+```bash
   $ sudo swapon -a
+```
 
 This script relies on wget and imagemagick. Both are easily installed
 by your systems package-management-system.
@@ -90,7 +99,9 @@ by your systems package-management-system.
 So, on Debian for instance, you only need to put the following into
 the console:
 
-  $ sudo apt-get install wget imagemagick
+```bash
+sudo apt-get install wget imagemagick
+```
 
 Depending on your distro, the package names might differ slightly! Use
 a search engine of your choice to find out, how the packages are named
@@ -98,40 +109,42 @@ in your distro!
 
 You may want to check:
 
-  $ apt search imagemagick
+```bash
+apt search imagemagick
+```
 
 
 ------------------------------------
 Targets:
 
-world
+**world**
 	Generates the world tiles, needed to run FG with EarthView.
-	You will find the results in output/[$resolution]/*. Copy
-	these into $FGDATA/Models/Astro/*. More about the installation
+	You will find the results in output/[$resolution]/\*. Copy
+	these into $FGDATA/Models/Astro/\*. More about the installation
 	of these textures can be found here:
 	http://wiki.flightgear.org/Earthview#Customization
 
-clouds
+**clouds**
 	Generates the cloud tiles, needed to run FG with EarthView.
 	The locations are the same as the other textures mentioned
 	above. Note that clouds are only available with up to 8k
 	resolution, due to the available data at NASA.
 
-all
+**all**
 	Converts everything needed for a full-blown earthview texture
 	set. Does the same as:
-	  $ ./convert.sh world clouds
+	   ```./convert.sh world clouds```
 
 
 Options:
 
-1k | 2k | 4k | 8k | 16k
+**1k | 2k | 4k | 8k | 16k**
 	Lets you specify a desired resolution of the textures.
 	Possible values are 1k, 2k, 4k, 8k and 16k. If nothing is
 	specified, the script will generate all of the resolutions.
 	16k is only available for earth textures.
 
-nasa
+**nasa**
 	Causes the script to download directly from 
 	http://visibleearth.nasa.gov . If omitted the script will
 	download from
@@ -139,14 +152,14 @@ nasa
 	which is much faster!
 	Uses wget either way.
 
-no-download
+**no-download**
 	Causes the script to skip the download function. If you
 	already have the source images, then you don't need to
 	re-download them. (About 2.4GB!)
 	If omitted, the script will download the source images from
 	https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z
 
-cleanup
+**cleanup**
 	Deletes the temporary files created during texture generation.
 	These can be found in tmp/
 	Note: if for some reason you later want some other resolution,
@@ -155,13 +168,13 @@ cleanup
 	Frees up a lot of disk-space! Which would have to be
 	regenerated if needed again.
 
-rebuild
+**rebuild**
 	Deletes only the temporary files of the given target. So if
-	you call './convert.sh rebuild world' the script will delete
+	you call ```./convert.sh rebuild world``` the script will delete
 	all corresponding temp-files of the target world, which will
 	trigger a complete regeneration of the relevant (instead of
 	skipping existing files)
 
-check
+**check**
 	Creates mosaics of the tiles, so you can look at them and see
 	if all went well.
