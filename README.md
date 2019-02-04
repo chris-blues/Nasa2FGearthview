@@ -10,7 +10,7 @@ or this FG-wiki-page:
 
 
 ------------------------------------
-About:
+## About:
 
 This script runs on Linux (maybe Mac also?) in a Bash
 (Bourne Again Shell) - Windows is not supported (by the nature of the
@@ -41,7 +41,7 @@ Buckaroo has created a nice overview on dds-compression:
 [1] http://www.buckarooshangar.com/flightgear/tut_dds.html
 
 ------------------------------------
-Installation and usage:
+## Installation and usage:
 
 Simply copy "convert.sh" into a folder of your liking and run it:
 
@@ -72,7 +72,7 @@ So your call could look sth like this:
 
 
 ------------------------------------
-Requirements:
+## Requirements:
 
 WARNING!
 
@@ -115,7 +115,7 @@ apt search imagemagick
 
 
 ------------------------------------
-Targets:
+## Targets:
 
 **world**
 	Generates the world tiles, needed to run FG with EarthView.
@@ -136,7 +136,7 @@ Targets:
 	   ```./convert.sh world clouds```
 
 
-Options:
+## Options:
 
 **1k | 2k | 4k | 8k | 16k**
 	Lets you specify a desired resolution of the textures.
