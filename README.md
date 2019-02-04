@@ -45,7 +45,7 @@ Buckaroo has created a nice overview on dds-compression:
 
 Simply copy "convert.sh" into a folder of your liking and run it:
 
-```bash
+```shell
 ./convert.sh
 ```
 
@@ -66,7 +66,7 @@ explained below):
 
 So your call could look sth like this:
 
-```bash
+```shell
 ./convert.sh world no-download cleanup 8k
 ```
 
@@ -84,11 +84,11 @@ let it run over night - your computer might become unresponsive from
 time to time, due to the heavy CPU and memory load, which tends to
 occur, when converting 54000x27000 images. ;-)
 I also recommend to deactivate swapping!
-```bash
+```shell
   sudo swapoff -a
  ```
 To reactivate swapping do:
-```bash
+```shell
   $ sudo swapon -a
 ```
 
@@ -99,7 +99,7 @@ by your systems package-management-system.
 So, on Debian for instance, you only need to put the following into
 the console:
 
-```bash
+```shell
 sudo apt-get install wget imagemagick
 ```
 
@@ -109,7 +109,7 @@ in your distro!
 
 You may want to check:
 
-```bash
+```shell
 apt search imagemagick
 ```
 
