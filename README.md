@@ -2,10 +2,10 @@
 A bash-script to convert NASA satellite images to ready-to-use
 textures for FG's EarthView using ImageMagick.
 
-For info about FGearthview, see the forum thread:
+For info about FGearthview, see the forum thread:\
   https://forum.flightgear.org/viewtopic.php?f=6&t=15754
   
-or this FG-wiki-page:
+or this FG-wiki-page:\
   http://wiki.flightgear.org/Earthview
 
 
@@ -26,7 +26,7 @@ NASA, then provide "nasa" to the script (see below)
 In the end you will have 8 world-textures in .png and .dds format.
 Generally .dds is better in performance, but it won't work on some
 graphics cards. If this is the case for you, then try the .png files.
-For further information see:
+For further information see:\
 http://wiki.flightgear.org/index.php?title=DDS_Textures_in_FlightGear&redirect=no
 
 If you also converted the clouds, then you'll also find 8 cloud-
@@ -83,6 +83,7 @@ Also, this script will run for a *very long* time! It might be best to
 let it run over night - your computer might become unresponsive from
 time to time, due to the heavy CPU and memory load, which tends to
 occur, when converting 54000x27000 images. ;-)
+
 I also recommend to deactivate swapping!
 ```shell
   sudo swapoff -a
@@ -93,7 +94,7 @@ To reactivate swapping do:
 ```
 
 This script relies on wget and imagemagick. Both are easily installed
-by your systems package-management-system.
+by your systems package-management-system.\
 (On Debian/Ubuntu this is "apt-get")
 
 So, on Debian for instance, you only need to put the following into
@@ -117,20 +118,20 @@ apt search imagemagick
 ------------------------------------
 ## Targets:
 
-**world**
+**world**\
 	Generates the world tiles, needed to run FG with EarthView.
 	You will find the results in output/[$resolution]/\*. Copy
 	these into $FGDATA/Models/Astro/\*. More about the installation
 	of these textures can be found here:
 	http://wiki.flightgear.org/Earthview#Customization
 
-**clouds**
+**clouds**\
 	Generates the cloud tiles, needed to run FG with EarthView.
 	The locations are the same as the other textures mentioned
 	above. Note that clouds are only available with up to 8k
 	resolution, due to the available data at NASA.
 
-**all**
+**all**\
 	Converts everything needed for a full-blown earthview texture
 	set. Does the same as:
 	   ```./convert.sh world clouds```
@@ -138,13 +139,13 @@ apt search imagemagick
 
 ## Options:
 
-**1k | 2k | 4k | 8k | 16k**
+**1k | 2k | 4k | 8k | 16k**\
 	Lets you specify a desired resolution of the textures.
 	Possible values are 1k, 2k, 4k, 8k and 16k. If nothing is
 	specified, the script will generate all of the resolutions.
 	16k is only available for earth textures.
 
-**nasa**
+**nasa**\
 	Causes the script to download directly from 
 	http://visibleearth.nasa.gov . If omitted the script will
 	download from
@@ -152,14 +153,14 @@ apt search imagemagick
 	which is much faster!
 	Uses wget either way.
 
-**no-download**
+**no-download**\
 	Causes the script to skip the download function. If you
 	already have the source images, then you don't need to
 	re-download them. (About 2.4GB!)
 	If omitted, the script will download the source images from
 	https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z
 
-**cleanup**
+**cleanup**\
 	Deletes the temporary files created during texture generation.
 	These can be found in tmp/
 	Note: if for some reason you later want some other resolution,
@@ -168,13 +169,13 @@ apt search imagemagick
 	Frees up a lot of disk-space! Which would have to be
 	regenerated if needed again.
 
-**rebuild**
+**rebuild**\
 	Deletes only the temporary files of the given target. So if
 	you call ```./convert.sh rebuild world``` the script will delete
 	all corresponding temp-files of the target world, which will
 	trigger a complete regeneration of the relevant (instead of
 	skipping existing files)
 
-**check**
+**check**\
 	Creates mosaics of the tiles, so you can look at them and see
 	if all went well.
