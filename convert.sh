@@ -185,7 +185,7 @@ https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev
 ALTERNATE_URL="https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z"
 ALTERNATE_FILENAME="raw-data-NASA.7z"
 
-if ! [ -x "$($NORMALBIN)" ]; then
+if ! [ -x "$(command -v $NORMALBIN)" ]; then
   echo ">>>>>>>>>>>>  Error: $NORMALBIN binary not found! <<<<<<<<<<<<<"
   echo "You can get it from: https://github.com/planrich/normalmap"
   HEIGHTS="false"
