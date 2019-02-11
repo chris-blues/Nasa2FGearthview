@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# convert.sh - a script to convert NASA sattelite images into textures for use with FGearthview (orbital rendering)
+# convert.sh - a script to convert NASA sattelite images into textures
+# for use with FGearthview (orbital rendering)
 # Copyright (C) 2016 chris_blues <chris@musicchris.de>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,9 +17,12 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# v0.12: Chris Ringeval (eatdirt):
+# -add normalmapping output + small improvements
 
 
-VERSION="v0.11"
+VERSION="v0.12"
 
 # make sure the script halts on error
 set -e
@@ -29,21 +33,28 @@ function showHelp
    echo "https://github.com/chris-blues/Nasa2FGearthview"
    echo
    echo "Usage:"
-   echo "./convert.sh [ download world clouds 8k cleanup rebuild ]"
+   echo "./convert.sh [ download no-download nasa alt world clouds heights"
+   echo "               1k 2k 4k 8k 16k cleanup rebuild ]"
    echo
    echo "* Append \"nasa\" to download the needed images from NASA"
-   echo "  -> This will download ca 2.4GB of data!"
+   echo "  -> This will download up to 2.4GB of data!"
    echo "  -> wget can continue interrupted downloads!"
-   echo "  If omitted, it will download from my server, which is a lot"
-   echo "  faster. See README for details."
+   echo "* Append \"alt\" to download the needed images from an ALTERNATE"
+   echo "  server, currently from musicchris.de"
+   echo "  If omitted, download will use default server. See README for more"
+   echo "  details."
    echo "* Append \"no-download\" to the command to skip the download"
    echo "  process alltogether. Only makes sense if you already got"
    echo "  the necessary data."
    echo "* Append \"world\" to the command to generate the world tiles"
    echo "* Append \"clouds\" to the command to generate cloud tiles"
-   echo "* Append \"all\" to the command to generate both - world and"
-   echo "  clouds"
-   echo "* Append the size of the tiles (1k, 2k, 4, 8k, 16k). If you"
+   echo "* Append \"heights\" to the command to generate height tiles"
+   echo "  and the normalmaps needed by EarthView. Notice that you need"
+   echo "  the normalmap binary to be installed. You can get it from:"
+   echo "  https://github.com/planrich/normalmap"
+   echo "* Append \"all\" to the command to generate all - world, clouds"
+   echo "  and heights"
+   echo "* Append the size of the tiles (1k, 2k, 4k, 8k, 16k). If you"
    echo "  don't pass a resolution, then all resolutions will be"
    echo "  generated."
    echo "* Append \"cleanup\" to delete all temporary files in tmp/"
@@ -59,7 +70,7 @@ function showHelp
    echo "  Useful if the source files have changed."
    echo "* Append \"check\" to let check the results. This will create"
    echo "  mosaics of the existing tiles. If no target is specified,"
-   echo "  all 3 layers will be built: clouds world and nightlights."
+   echo "  all layers will be built: clouds, heights, world and nightlights."
    echo
    echo "If, for some reason, the script aborts, then it will try to"
    echo "skip the already completed steps, so you don't have to wait"
@@ -103,10 +114,12 @@ if [ $1 == "-h" ] ; then showHelp ; fi
 for ARG in "$@"
 do
   if [ $ARG == "nasa" ] ; then DOWNLOAD="true" ; DL_LOCATION="NASA" ;  echo "Downloading from visibleearth.nasa.gov" ; fi
+  if [ $ARG == "alt" ] ; then DOWNLOAD="true" ; DL_LOCATION="ALT" ;  echo "Downloading from alternate location" ; fi
   if [ $ARG == "no-download" ] ; then DOWNLOAD="false" ; echo "Skipping the download process" ; fi
   if [ $ARG == "world" ] ; then WORLD="true" ; fi
   if [ $ARG == "clouds" ] ; then CLOUDS="true" ; fi
-  if [ $ARG == "all" ] ; then WORLD="true" ; CLOUDS="true" ; fi
+  if [ $ARG == "heights" ] ; then HEIGHTS="true" ; fi
+  if [ $ARG == "all" ] ; then WORLD="true" ; CLOUDS="true" ; HEIGHTS="true" ; fi
   if [ $ARG == "1k" ] ; then RESOLUTION="1024" ; fi
   if [ $ARG == "2k" ] ; then RESOLUTION="2048" ; fi
   if [ $ARG == "4k" ] ; then RESOLUTION="4096" ; fi
@@ -119,12 +132,14 @@ done
 if [ -z $DOWNLOAD ] ; then DOWNLOAD="true" ; fi
 if [ -z $WORLD ] ; then WORLD="false" ; fi
 if [ -z $CLOUDS ] ; then CLOUDS="false" ; fi
+if [ -z $HEIGHTS ] ; then HEIGHTS="false" ; fi
 if [ -z $CLEANUP ] ; then CLEANUP="false" ; fi
 if [ -z $REBUILD ] ; then REBUILD="false" ; fi
 if [ -z $BUILDCHECKS ] ; then BUILDCHECKS="false" ; fi
 
 CHECKWORLD=$WORLD
 CHECKCLOUDS=$CLOUDS
+CHECKHEIGHTS=$HEIGHTS
 
 
 ########################
@@ -139,6 +154,12 @@ TIME=$(date +"%Y-%m-%d_%H:%M:%S")
 LOGFILE_GENERAL="logs/${TIME}.log"
 LOGFILE_TIME="logs/${TIME}.time.log"
 
+#command line gimp plugin from https://github.com/planrich/normalmap
+#higher filters (5x5) create too sharp features (no rescaling, I
+#assume earthview do its own normalization)
+NORMALBIN="normalmap"
+NORMALOPTS="-s 1 -f FILTER_PREWITT_3x3"
+
 URLS_WORLD="http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.A1.png
 http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.A2.png
 http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.B1.png
@@ -152,8 +173,24 @@ http://eoimages.gsfc.nasa.gov/images/imagerecords/79000/79765/dnb_land_ocean_ice
 URLS_CLOUDS="http://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57747/cloud.E.2001210.21600x21600.png
 http://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57747/cloud.W.2001210.21600x21600.png"
 
+URLS_HEIGHTS="https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_A1_grey_geo.tif
+https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_A2_grey_geo.tif
+https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_B1_grey_geo.tif
+https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_B2_grey_geo.tif
+https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_C1_grey_geo.tif
+https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_C2_grey_geo.tif
+https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_D1_grey_geo.tif
+https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_D2_grey_geo.tif"
+
 ALTERNATE_URL="https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z"
 ALTERNATE_FILENAME="raw-data-NASA.7z"
+
+if ! [ -x "$(command -v $NORMALBIN)" ]; then
+  echo ">>>>>>>>>>>>  Error: $NORMALBIN binary not found! <<<<<<<<<<<<<"
+  echo "You can get it from: https://github.com/planrich/normalmap"
+  HEIGHTS="false"
+fi
+
 
 if [ -z $RESOLUTION ]
   then
@@ -162,7 +199,7 @@ if [ -z $RESOLUTION ]
 4096
 8192
 16384"
-    NO_RESOLUTION_GIVEN="true"
+    NO_RESOLUTION_GIVEN="false"
     RESOLUTION_MAX="16384"
 fi
 if [ -z $RESOLUTION_MAX ] ; then RESOLUTION_MAX=$RESOLUTION ; fi
@@ -236,6 +273,18 @@ function rebuild
       rm tmp/cloud*
      }
    fi
+
+    if [ $HEIGHTS == "true" ]
+   then
+     {
+      echo
+      echo "#########################################"
+      echo "## Removing tmp-files of target heights##"
+      echo "#########################################"
+      rm tmp/height*
+     }
+   fi
+   
   }
 
 function cleanUp
@@ -244,9 +293,10 @@ function cleanUp
    echo "############################"
    echo "## Removing all tmp-files ##"
    echo "############################"
-   rm -rv tmp/night*
-   rm -rv tmp/world*
-   rm -rv tmp/clouds*
+   rm -rvf tmp/night*
+   rm -rvf tmp/world*
+   rm -rvf tmp/cloud*
+   rm -rvf tmp/height*
   }
 
 function prettyTime
@@ -312,13 +362,26 @@ function downloadImages
   {
    echo | tee -a $LOGFILE_GENERAL
    echo "###################################################" | tee -a $LOGFILE_GENERAL
-   if [ ! -z $DL_LOCATION ]
-     then echo "## Downloading images from visibleearth.nasa.gov ##" | tee -a $LOGFILE_GENERAL
-     else echo "##    Downloading images from  musicchris.de     ##" | tee -a $LOGFILE_GENERAL
+   if [ -z $DL_LOCATION ]
+   then
+       DL_LOCATION="NASA"
+   fi        
+
+   if [ $DL_LOCATION == "NASA" ]
+   then
+       echo "## Downloading images from visibleearth.nasa.gov ##" | tee -a $LOGFILE_GENERAL
    fi
+
+   if [ $DL_LOCATION == "ALT" ]
+   then
+       echo "##    Downloading images from  musicchris.de     ##" | tee -a $LOGFILE_GENERAL
+       f=$ALTERNATE_URL
+       DL_LOCATION="musicchris.de"
+       FILENAME=$(echo $f | sed 's@.*/@@')
+   fi
+
    echo "###################################################" | tee -a $LOGFILE_GENERAL
-   if [ -z $DL_LOCATION ] ; then f=$ALTERNATE_URL ; DL_LOCATION="musicchris.de" ; fi
-   FILENAME=$(echo $f | sed 's@.*/@@')
+   
    if [ $WORLD == "true" ] 
    then
      if [ $DL_LOCATION == "NASA" ]
@@ -332,6 +395,14 @@ function downloadImages
      if [ $DL_LOCATION == "NASA" ]
      then
        downloadClouds 
+     fi
+   fi
+
+   if [ $HEIGHTS == "true" ] 
+   then
+     if [ $DL_LOCATION == "NASA" ]
+     then
+       downloadHeights
      fi
    fi
 
@@ -349,6 +420,19 @@ function downloadWorld
    done
   }
 
+
+function downloadHeights
+  {
+   mkdir -p input
+   echo "Downloading height tiles..." | tee -a $LOGFILE_GENERAL
+   for f in $URLS_HEIGHTS
+   do
+     FILENAME=$(echo $f | sed 's@.*/@@')
+     wget --output-document=input/$FILENAME --continue --show-progress $f 2>> $LOGFILE_GENERAL
+   done
+  }
+
+  
 function downloadClouds
   {
    mkdir -p input
@@ -370,7 +454,10 @@ function downloadMusicchris
    done
    echo "Unpacking raw images..." | tee -a $LOGFILE_GENERAL
    cd input
-   7z e -bt -y raw-data-NASA.7z 2>> $LOGFILE_GENERAL
+   for p in 1 2 3 4 5
+   do
+   7z e -bt -y raw-data-NASA.7z.00${p} 2>> ../$LOGFILE_GENERAL
+   done
    cd ..
   }
 
@@ -434,9 +521,9 @@ function generateWorld
            echo "--> Found tmp/nightlights_${I_W}x${I_H}.mpc : usable for ${RESOLUTION_MAX}x${RESOLUTION_MAX}" >> $LOGFILE_GENERAL
            FOUND_BIGGER_PICTURE="true"
            TIMESAVER_SIZE="$IMAGE_SIZE"
-	 fi
+         fi
        else
-	 echo "--> No." >> $LOGFILE_GENERAL
+         echo "--> No." >> $LOGFILE_GENERAL
        fi
      done
      echo
@@ -553,7 +640,7 @@ function generateWorld
    do
      NASA2FG $t
      FOUND_BIGGER_WORLD_PICTURE="false"
-     unset $TIMESAVER_SIZE
+     unset TIMESAVER_SIZE
      if [ ! -s "tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc" ]
      then
        {
@@ -572,7 +659,7 @@ function generateWorld
             then
               FOUND_BIGGER_WORLD_PICTURE="true"
               TIMESAVER_SIZE="$IMAGE_SIZE"
-	    fi
+            fi
           fi
         done
         if [ $FOUND_BIGGER_WORLD_PICTURE != "true" ]
@@ -591,7 +678,7 @@ function generateWorld
                -crop 1x1+1+1 \
                -resize ${IMAGE_BORDERLESS}x${OVERLAY_HEIGHT}\! \
                tmp/bluebar.mpc
-	     set +x
+               set +x
            fi
            if [ $t == "C1" -o $t == "D1" ]
            then
@@ -608,7 +695,7 @@ function generateWorld
                 -geometry +0+0 \
                 -composite \
                 tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
-	      set +x
+              set +x
               echo
              }
            else
@@ -621,21 +708,21 @@ function generateWorld
                 input/world.200408.3x21600x21600.${t}.png \
                 -resize ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
                 tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
-	      set +x
-	     }
-	   fi
-	else
-	  echo "==> Timesaver:) Using existing file: tmp/world_seamless_${TIMESAVER_SIZE}_${DEST}.mpc -> tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc" | tee -a $LOGFILE_GENERAL
-	   set -x
-	  convert \
-	    -monitor \
-	    -limit memory 32 \
-	    -limit map 32 \
-	    tmp/world_seamless_${TIMESAVER_SIZE}_${DEST}.mpc \
-	    -resize ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
-	    tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
-	  set +x
-	fi
+              set +x
+              }
+           fi
+          else
+          echo "==> Timesaver:) Using existing file: tmp/world_seamless_${TIMESAVER_SIZE}_${DEST}.mpc -> tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc" | tee -a $LOGFILE_GENERAL
+          set -x
+          convert \
+            -monitor \
+            -limit memory 32 \
+            -limit map 32 \
+             tmp/world_seamless_${TIMESAVER_SIZE}_${DEST}.mpc \
+            -resize ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
+             tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
+          set +x
+        fi
        }
      else echo "=> Skipping existing file: tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
      fi
@@ -767,12 +854,12 @@ function generateWorld
         fi
         echo
         # set -x
-	convert \
-	  -monitor \
-	  tmp/world_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
-	  -crop $CROP \
-	  -resize $RESIZE\! \
-	  tmp/world_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
+        convert \
+          -monitor \
+           tmp/world_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
+          -crop $CROP \
+          -resize $RESIZE\! \
+           tmp/world_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
         convert \
           -monitor \
           tmp/world_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
@@ -794,7 +881,7 @@ function generateWorld
           -geometry $CORNER_POS \
           -composite \
           tmp/world_seams_${RESOLUTION_MAX}_${t}.mpc
-	set +x
+        set +x
         echo
        }
      done
@@ -825,24 +912,24 @@ function generateWorld
         echo
         echo "--> Writing output/${r}/world_${t}.dds @ ${r}x${r}"
         # set -x
-	convert \
-	  -monitor \
-	  tmp/world_${RESOLUTION_MAX}_done_${t}.mpc \
-	  -resize ${r}x${r} \
-	  -flip \
-	  -define dds:compression=dxt5 \
-	  output/${r}/world_${t}.dds
-	set +x
-	echo
-	echo "--> Writing output/${r}/world_${t}.png @ ${r}x${r}"
-	# set -x
-	convert \
-	  -monitor \
-	  tmp/world_${RESOLUTION_MAX}_done_${t}.mpc \
-	  -resize ${r}x${r} \
-	  output/${r}/world_${t}.png
-	set +x
-	echo
+        convert \
+          -monitor \
+           tmp/world_${RESOLUTION_MAX}_done_${t}.mpc \
+          -resize ${r}x${r} \
+          -flip \
+          -define dds:compression=dxt5 \
+           output/${r}/world_${t}.dds
+        set +x
+        echo
+        echo "--> Writing output/${r}/world_${t}.png @ ${r}x${r}"
+        # set -x
+        convert \
+          -monitor \
+           tmp/world_${RESOLUTION_MAX}_done_${t}.mpc \
+          -resize ${r}x${r} \
+           output/${r}/world_${t}.png
+        set +x
+        echo
        }
      done
 
@@ -874,7 +961,11 @@ function generateClouds
   {
    if [ -z $STARTTIME ] ; then STARTTIME=$(date +%s) ; fi
    # maximum cloud-tile resolution is 8192, since we have no big enough source files...
-   if [ $RESOLUTION_MAX -eq 16384 ] ; then RESOLUTION_MAX=8192 ; fi
+
+   if [[ $NO_RESOLUTION_GIVEN == "true" ]]; then
+       if [ $RESOLUTION_MAX -eq 16384 ] ; then RESOLUTION_MAX=8192 ; fi
+   fi
+
    let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
    let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
    let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
@@ -918,9 +1009,9 @@ W"
               echo "Yes - use it!" >> $LOGFILE_GENERAL
               FOUND_BIGGER_CLOUD_PICTURE="true"
               TIMESAVER_SIZE="$IMAGE_SIZE"
-	    else echo "No." >> $LOGFILE_GENERAL
-	    fi
-	  else echo "No." >> $LOGFILE_GENERAL
+            else echo "No." >> $LOGFILE_GENERAL
+            fi
+          else echo "No." >> $LOGFILE_GENERAL
           fi
         done
         if [ -z $FOUND_BIGGER_CLOUD_PICTURE ]
@@ -934,17 +1025,17 @@ W"
             -alpha copy \
             +level-colors white \
             tmp/cloud_T_${SIZE}_${t}.mpc
-	  set +x
-	else
-	  echo "==> Timesaver:) Using existing file: tmp/cloud_T_${TIMESAVER_SIZE}_${t}.mpc" | tee -a $LOGFILE_GENERAL
-	  # set -x
-	  convert \
+          set +x
+        else
+          echo "==> Timesaver:) Using existing file: tmp/cloud_T_${TIMESAVER_SIZE}_${t}.mpc" | tee -a $LOGFILE_GENERAL
+          # set -x
+          convert \
             -monitor \
             tmp/cloud_T_${TIMESAVER_SIZE}_${t}.mpc \
             -resize ${SIZE}x${SIZE} \
             tmp/cloud_T_${SIZE}_${t}.mpc
-	  set +x
-	fi
+          set +x
+        fi
      else echo "=> Skipping existing file: tmp/cloud_T_${SIZE}_${t}.mpc" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
      fi
    done
@@ -975,25 +1066,25 @@ W"
      do
        {
         if [ $t == "0" ]
-	then
-	  mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.mpc tmp/clouds_${IMAGE_BORDERLESS}_N3.mpc
-	  mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.cache tmp/clouds_${IMAGE_BORDERLESS}_N3.cache
-	fi
+        then
+          mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.mpc tmp/clouds_${IMAGE_BORDERLESS}_N3.mpc
+          mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.cache tmp/clouds_${IMAGE_BORDERLESS}_N3.cache
+        fi
         if [ $t == "1" ]
         then
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.mpc tmp/clouds_${IMAGE_BORDERLESS}_N4.mpc
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.cache tmp/clouds_${IMAGE_BORDERLESS}_N4.cache
-	fi
+        fi
         if [ $t == "2" ]
         then
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.mpc tmp/clouds_${IMAGE_BORDERLESS}_S3.mpc
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.cache tmp/clouds_${IMAGE_BORDERLESS}_S3.cache
-	fi
+        fi
         if [ $t == "3" ]
-	then
-	  mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.mpc tmp/clouds_${IMAGE_BORDERLESS}_S4.mpc
-	  mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.cache tmp/clouds_${IMAGE_BORDERLESS}_S4.cache
-	fi
+        then
+          mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.mpc tmp/clouds_${IMAGE_BORDERLESS}_S4.mpc
+          mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.cache tmp/clouds_${IMAGE_BORDERLESS}_S4.cache
+        fi
        }
      done
     }
@@ -1016,22 +1107,22 @@ W"
         then
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.mpc tmp/clouds_${IMAGE_BORDERLESS}_N1.mpc
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.cache tmp/clouds_${IMAGE_BORDERLESS}_N1.cache
-	fi
+        fi
         if [ $t == "1" ]
         then
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.mpc tmp/clouds_${IMAGE_BORDERLESS}_N2.mpc
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.cache tmp/clouds_${IMAGE_BORDERLESS}_N2.cache
-	fi
+        fi
         if [ $t == "2" ]
         then
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.mpc tmp/clouds_${IMAGE_BORDERLESS}_S1.mpc
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.cache tmp/clouds_${IMAGE_BORDERLESS}_S1.cache
-	fi
+        fi
         if [ $t == "3" ]
         then
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.mpc tmp/clouds_${IMAGE_BORDERLESS}_S2.mpc
           mv tmp/clouds_${IMAGE_BORDERLESS}_${t}.cache tmp/clouds_${IMAGE_BORDERLESS}_S2.cache
-	fi
+        fi
        }
      done
     }
@@ -1071,7 +1162,9 @@ W"
    echo "## propagate last pixels to the edge ##" | tee -a $LOGFILE_GENERAL
    echo "#######################################" | tee -a $LOGFILE_GENERAL
 
-   if [ $RESOLUTION_MAX -eq 16384 ] ; then RESOLUTION_MAX=8192 ; fi
+   if [[ $NO_RESOLUTION_GIVEN == "true" ]]; then
+       if [ $RESOLUTION_MAX -eq 16384 ] ; then RESOLUTION_MAX=8192 ; fi
+   fi
    let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
    let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
    let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
@@ -1167,7 +1260,7 @@ W"
           -geometry $CORNER_POS \
           -composite \
           tmp/clouds_seams_${RESOLUTION_MAX}_${t}.mpc
-	set +x
+        set +x
         echo
        }
      done
@@ -1189,24 +1282,15 @@ W"
      echo "#############################" | tee -a $LOGFILE_GENERAL
      for r in $RESOLUTION
      do
-       {
-        if [ $r -eq 16384 ]
-          then
-            if [ $NO_RESOLUTION_GIVEN == "true" ]
-              then
-                continue
-	      else
-	        r=8192
-	    fi
-	fi
+       {    
         mkdir -p output/$r
         echo
         echo "--> Writing output/${r}/clouds_${t}.png @ ${r}x${r}" | tee -a $LOGFILE_GENERAL
-	convert \
-	  -monitor \
-	  tmp/clouds_${RESOLUTION_MAX}_${t}_done.mpc \
-	  -resize ${r}x${r} \
-	  output/${r}/clouds_${t}.png
+        convert \
+          -monitor \
+          tmp/clouds_${RESOLUTION_MAX}_${t}_done.mpc \
+          -resize ${r}x${r} \
+          output/${r}/clouds_${t}.png
        }
      done
 
@@ -1231,6 +1315,309 @@ W"
    echo "Overall processing time: $DAYS d, $HOURS h, $MINUTES m, $SECS s" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
   }
 
+
+
+function generateHeights
+  {
+  if [ -z $STARTTIME ] ; then STARTTIME=$(date +%s) ; fi
+   echo | tee -a $LOGFILE_GENERAL
+   echo "################################" | tee -a $LOGFILE_GENERAL
+   echo "####    Processing Heights  ####" | tee -a $LOGFILE_GENERAL
+   echo "################################" | tee -a $LOGFILE_GENERAL
+   echo | tee -a $LOGFILE_GENERAL
+
+   if [[ $NO_RESOLUTION_GIVEN == "true" ]]; then
+       if [ $RESOLUTION_MAX -eq 16384 ] ; then RESOLUTION_MAX=8192 ; fi
+   fi
+      
+   let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
+   let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
+   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
+   let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
+   let "SIZE = 2 * $IMAGE_BORDERLESS"
+   
+   mkdir -p tmp
+   mkdir -p output
+
+
+   echo "################################################" | tee -a $LOGFILE_GENERAL
+   echo "## Resize the NASA-Originals to ${RESOLUTION_MAX}-(2*${BORDER_WIDTH}) ##" | tee -a $LOGFILE_GENERAL
+   echo "################################################" | tee -a $LOGFILE_GENERAL
+   for t in $NASA
+   do
+     NASA2FG $t
+     FOUND_BIGGER_WORLD_PICTURE="false"
+     unset TIMESAVER_SIZE
+     if [ ! -s "tmp/heights_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc" ]
+     then
+       {
+        for r in 16384 8192 4096 2048
+        do
+          if [ $r -le $RESOLUTION_MAX ]
+          then
+            continue
+          fi
+          let "IMAGE_SIZE = $r - ( 2 * ( $r / 128 ) )"
+          let "I_W = $IMAGE_SIZE * 4"
+          let "I_H = $IMAGE_SIZE * 2"
+          if [ -s tmp/heights_seamless_${IMAGE_SIZE}_${DEST}.mpc ]
+          then
+            if [ $IMAGE_SIZE -ge $IMAGE_BORDERLESS ]
+            then
+              FOUND_BIGGER_WORLD_PICTURE="true"
+              TIMESAVER_SIZE="$IMAGE_SIZE"
+            fi
+          fi
+        done
+        if [ $FOUND_BIGGER_WORLD_PICTURE != "true" ]
+        then
+            # set -x
+              convert \
+                -monitor \
+                -limit memory 32 \
+                -limit map 32 \
+                input/gebco_08_rev_elev_${t}_grey_geo.tif \
+                -resize ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
+                tmp/heights_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
+              set +x
+        else
+          echo "==> Timesaver:) Using existing file: tmp/heights_seamless_${TIMESAVER_SIZE}_${DEST}.mpc -> tmp/heights_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc" | tee -a $LOGFILE_GENERAL
+           set -x
+          convert \
+            -monitor \
+            -limit memory 32 \
+            -limit map 32 \
+            tmp/heights_seamless_${TIMESAVER_SIZE}_${DEST}.mpc \
+            -resize ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
+            tmp/heights_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
+          set +x
+        fi
+       }
+     else echo "=> Skipping existing file: tmp/heights_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
+     fi
+   done
+   # 3h, 12m, 9s
+   if [ -z $LASTTIME ] ; then LASTTIME=$STARTTIME ; fi
+   echo "input/gebco_08_rev_elev_[A-D][12]_grey_geo.tif -> tmp/heights_seamless_${IMAGE_BORDERLESS}_[NS][1-4].mpc" >> $LOGFILE_TIME
+   getProcessingTime
+  
+   echo | tee -a $LOGFILE_GENERAL
+   echo "#####################################" | tee -a $LOGFILE_GENERAL
+   echo "## Put a ${BORDER_WIDTH}px border to each side ##" | tee -a $LOGFILE_GENERAL
+   echo "#####################################" | tee -a $LOGFILE_GENERAL
+   for t in $TILES
+   do
+     if [ ! -s "tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc" ]
+     then
+       # set -x
+       convert \
+         -monitor \
+         tmp/heights_seamless_${IMAGE_BORDERLESS}_${t}.mpc \
+         -bordercolor none \
+         -border ${BORDER_WIDTH} \
+         tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc
+       set +x
+       echo
+     fi
+     if [ ! -s "tmp/heights_seams_${RESOLUTION_MAX}_${t}.mpc" ]
+     then
+       # set -x
+       cp tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc tmp/heights_seams_${RESOLUTION_MAX}_${t}.mpc
+       cp tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.cache tmp/heights_seams_${RESOLUTION_MAX}_${t}.cache
+       set +x
+     else echo "=> Skipping existing file: tmp/heights_seams_${RESOLUTION_MAX}_${t}.mpc" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
+     fi
+   done
+   # 11m, 24s
+   echo "-> tmp/heights_seams_${RESOLUTION_MAX}_[NS][1-4]_emptyBorder.mpc -> tmp/heights_seams_${RESOLUTION_MAX}_[NS][1-4].mpc" >> $LOGFILE_TIME
+   getProcessingTime
+
+   echo | tee -a $LOGFILE_GENERAL
+   echo "######################################################" | tee -a $LOGFILE_GENERAL
+   echo "## crop borderline pixels and propagate to the edge ##" | tee -a $LOGFILE_GENERAL
+   echo "######################################################" | tee -a $LOGFILE_GENERAL
+
+   if [[ $NO_RESOLUTION_GIVEN == "true" ]]; then
+       if [ $RESOLUTION_MAX -eq 16384 ] ; then RESOLUTION_MAX=8192 ; fi
+   fi
+   let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
+   let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
+   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
+   let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
+   let "SIZE = 2 * $IMAGE_BORDERLESS"
+   
+   CROP_TOP="${IMAGE_BORDERLESS}x1+${BORDER_WIDTH}+${BORDER_WIDTH}"
+   CROP_RIGHT="1x${IMAGE_BORDERLESS}+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
+   CROP_BOTTOM="${IMAGE_BORDERLESS}x1+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
+   CROP_LEFT="1x${IMAGE_BORDERLESS}+${BORDER_WIDTH}+${BORDER_WIDTH}"
+   CROP_TOPLEFT="1x1+${BORDER_WIDTH}+${BORDER_WIDTH}"
+   CROP_TOPRIGHT="1x1+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
+   CROP_BOTTOMRIGHT="1x1+${IMAGE_WITH_BORDER}+${IMAGE_WITH_BORDER}"
+   CROP_BOTTOMLEFT="1x1+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
+
+   ## HORIZ meaning a horizontal bar, like the one on top
+   HORIZ_RESIZE="${IMAGE_BORDERLESS}x${BORDER_WIDTH}"
+   VERT_RESIZE="${BORDER_WIDTH}x${IMAGE_BORDERLESS}"
+
+   POS_TOP="+${BORDER_WIDTH}+0"
+   POS_RIGHT="+${IMAGE_WITH_BORDER_POS}+${BORDER_WIDTH}"
+   POS_BOTTOM="+${BORDER_WIDTH}+${IMAGE_WITH_BORDER_POS}"
+   POS_LEFT="+0+${BORDER_WIDTH}"
+
+   for t in $TILES
+   do
+     if [ ! -s "tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc" ]
+     then
+     for b in $BORDERS
+     do
+       {
+        if [ $b == "top" ]
+        then
+          CROP=$CROP_TOP
+          RESIZE=$HORIZ_RESIZE
+          POSITION=$POS_TOP
+          CROPCORNER=$CROP_TOPRIGHT
+          CORNER_POS="+${IMAGE_WITH_BORDER_POS}+0"
+          CORNER_NAME="topRight"
+        fi
+        if [ $b == "right" ]
+        then
+          CROP=$CROP_RIGHT
+          RESIZE=$VERT_RESIZE
+          POSITION=$POS_RIGHT
+          CROPCORNER=$CROP_BOTTOMRIGHT
+          CORNER_POS="+${IMAGE_WITH_BORDER_POS}+${IMAGE_WITH_BORDER_POS}"
+          CORNER_NAME="bottomRight"
+        fi
+        if [ $b == "bottom" ]
+        then
+          CROP=$CROP_BOTTOM
+          RESIZE=$HORIZ_RESIZE
+          POSITION=$POS_BOTTOM
+          CROPCORNER=$CROP_BOTTOMLEFT
+          CORNER_POS="+0+${IMAGE_WITH_BORDER_POS}"
+          CORNER_NAME="bottomLeft"
+        fi
+        if [ $b == "left" ]
+        then
+          CROP=$CROP_LEFT
+          RESIZE=$VERT_RESIZE
+          POSITION=$POS_LEFT
+          CROPCORNER=$CROP_TOPLEFT
+          CORNER_POS="+0+0"
+          CORNER_NAME="topLeft"
+        fi
+        echo
+        # set -x
+        convert \
+          -monitor \
+          tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
+          -crop $CROP \
+          -resize $RESIZE\! \
+          tmp/heights_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
+        convert \
+          -monitor \
+          tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
+          -crop $CROPCORNER \
+          -resize ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
+          tmp/heights_${RESOLUTION_MAX}_${t}_seam_${CORNER_NAME}.mpc
+        convert \
+          -monitor \
+          tmp/heights_seams_${RESOLUTION_MAX}_${t}.mpc \
+          tmp/heights_${RESOLUTION_MAX}_${t}_seam_${b}.mpc \
+          -geometry $POSITION \
+          -composite \
+          tmp/heights_seams_${RESOLUTION_MAX}_${t}.mpc
+        echo
+        convert \
+          -monitor \
+          tmp/heights_seams_${RESOLUTION_MAX}_${t}.mpc \
+          tmp/heights_${RESOLUTION_MAX}_${t}_seam_${CORNER_NAME}.mpc \
+          -geometry $CORNER_POS \
+          -composite \
+          tmp/heights_seams_${RESOLUTION_MAX}_${t}.mpc
+        set +x
+        echo
+       }
+     done
+     echo
+     # set -x
+     cp -v tmp/heights_seams_${RESOLUTION_MAX}_${t}.mpc tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc | tee -a $LOGFILE_GENERAL
+     cp -v tmp/heights_seams_${RESOLUTION_MAX}_${t}.cache tmp/heights_${RESOLUTION_MAX}_done_${t}.cache | tee -a $LOGFILE_GENERAL
+     set +x
+
+     else echo "=> Skipping existing file: tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
+     fi
+
+  done
+  # 37m, 6s
+  echo "-> tmp/heights_seams_${RESOLUTION_MAX}_[NS][1-4].mpc -> tmp/heights_${RESOLUTION_MAX}_done_[NS][1-4].mpc" >> $LOGFILE_TIME
+  getProcessingTime
+
+  for t in $TILES
+   do
+     echo | tee -a $LOGFILE_GENERAL
+     echo "#############################" | tee -a $LOGFILE_GENERAL
+     echo "## Final output of tile $t ##" | tee -a $LOGFILE_GENERAL
+     echo "##       and normalmapping ##" | tee -a $LOGFILE_GENERAL
+     echo "#############################" | tee -a $LOGFILE_GENERAL
+
+     for r in $RESOLUTION
+     do
+       {        
+        mkdir -p output/$r
+        set +x
+        echo
+        echo "--> Writing output/${r}/heights_${t}.png @ ${r}x${r}"
+        # set -x
+        convert \
+          -monitor \
+          tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc \
+          -resize ${r}x${r} \
+          output/${r}/heights_${t}.png
+        
+        echo
+        echo "--> Writing output/${r}/normalmap_earth_${t}.png @ ${r}x${r}"
+        $NORMALBIN $NORMALOPTS output/${r}/heights_${t}.png output/${r}/normalmap_earth_${t}.png
+
+        set +x
+        echo
+       }
+     done
+
+     echo | tee -a $LOGFILE_GENERAL
+     echo "Heights and Normal $t [ done ]" | tee -a $LOGFILE_GENERAL
+     echo | tee -a $LOGFILE_GENERAL
+
+   done
+   echo "###############################" | tee -a $LOGFILE_GENERAL
+   echo "####    Heights: [ done ]  ####" | tee -a $LOGFILE_GENERAL
+   echo "###############################" | tee -a $LOGFILE_GENERAL
+   # 2h, 19m, 7s
+   # Overall processing time: 44089 s
+   # Overall processing time: 0 d, 2 h, 19 m, 7 s
+
+   echo "-> output/<\$RESOLUTIONS>/heights_[NS][1-4].png" >> $LOGFILE_TIME
+   getProcessingTime
+   echo
+   if [ $STARTTIME -eq $ENDTIME ]
+     then SECS=0
+     else let "SECS = $ENDTIME - $STARTTIME"
+   fi
+   echo "Overall processing time: $SECS s" | tee -a $LOGFILE_GENERAL
+   prettyTime
+   echo "Overall processing time: $DAYS d, $HOURS h, $MINUTES m, $SECS s" | tee -a $LOGFILE_GENERAL
+  }
+
+
+
+
+
+
+
+
+
+  
 function checkResults
   {
    echo | tee -a $LOGFILE_GENERAL
@@ -1251,7 +1638,7 @@ function checkResults
    let "HEIGHT = 2 * $RES"
    echo "Lowest available resolution is: $RES" | tee -a $LOGFILE_GENERAL
 
-   if [ $CHECKCLOUDS == "true" ]
+   if [[ $CHECKCLOUDS == "true" ]]
    then
      {
       echo "checking clouds..." | tee -a $LOGFILE_GENERAL
@@ -1292,7 +1679,51 @@ function checkResults
      }
    fi
 
-   if [ $CHECKWORLD == "true" ]
+
+   if [[ $CHECKHEIGHTS == "true" ]]
+   then
+     {
+      echo "checking heights..." | tee -a $LOGFILE_GENERAL
+      echo | tee -a $LOGFILE_GENERAL
+
+      echo "Creating canvas ${WIDTH}x${HEIGHT}" | tee -a $LOGFILE_GENERAL
+      convert \
+        -size ${WIDTH}x${HEIGHT} \
+        xc:Black \
+        -alpha on \
+        check_heights.png
+
+      POS=0
+      for t in 1 2 3 4
+      do
+        convert \
+          -monitor \
+          check_heights.png \
+          output/${RES}/heights_N${t}.png \
+          -geometry +${POS}+0 \
+          -composite \
+          check_heights.png
+        echo
+        convert \
+          -monitor \
+          check_heights.png \
+          output/${RES}/heights_S${t}.png \
+          -geometry +${POS}+${RES} \
+          -composite \
+          check_heights.png
+        echo
+        let "POS += $RES"
+      done
+      mogrify \
+        -monitor \
+        -resize 4096x2048 \
+        check_heights.png
+     }
+   fi
+
+
+   
+   if [[ $CHECKWORLD == "true" ]]
    then
      {
       echo "checking world..." | tee -a $LOGFILE_GENERAL
@@ -1366,6 +1797,7 @@ echo $TIME | tee -a $LOGFILE_TIME
 echo | tee -a $LOGFILE_GENERAL
 printf "Target:     " | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
 if [ $CLOUDS == "true" ] ; then printf "clouds " | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME ; fi
+if [ $HEIGHTS == "true" ] ; then printf "heights" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME ; fi
 if [ $WORLD == "true" ] ;  then printf "world " | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME ; fi
 echo | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
 echo "Will work in ${RESOLUTION_MAX}x${RESOLUTION_MAX} resolution and will output" | tee -a $LOGFILE_GENERAL
@@ -1377,12 +1809,13 @@ echo "--------------------------------------------------------------" | tee -a $
 echo | tee -a $LOGFILE_GENERAL
 
 
-if [ $REBUILD == "true" ] ; then rebuild ; fi
-if [ $DOWNLOAD == "true" ] ; then downloadImages ; fi
-if [ $WORLD == "true" ] ;  then generateWorld ; fi
-if [ $CLOUDS == "true" ] ; then generateClouds ; fi
-if [ $BUILDCHECKS == "true" ] ; then checkResults ; fi
-if [ $CLEANUP == "true" ] ; then cleanUp ; fi
+if [[ $REBUILD == "true" ]] ; then rebuild ; fi
+if [[ $DOWNLOAD == "true" ]] ; then downloadImages ; fi
+if [[ $WORLD == "true" ]] ;  then generateWorld ; fi
+if [[ $CLOUDS == "true" ]] ; then generateClouds ; fi
+if [[ $HEIGHTS == "true" ]]; then generateHeights; fi
+if [[ $BUILDCHECKS == "true" ]] ; then checkResults ; fi
+if [[ $CLEANUP == "true" ]] ; then cleanUp ; fi
 
 
 
