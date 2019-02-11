@@ -21,9 +21,9 @@ script). Maybe it works on windows as well, I don't know, feel free
 to try, and please let me know! :)
 
 This will download the raw images from http://visibleearth.nasa.gov - 
-their server is not very fast, so I provide an alternative download
+~~their server is not very fast, so I provide an alternative download
 location: https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z
-This one is much quicker! If you want the images directly from
+This one is much quicker!~~ If you want the images directly from
 NASA, then provide "nasa" to the script, if you want the alternate
 server provide "alt" instead (see below),
 
