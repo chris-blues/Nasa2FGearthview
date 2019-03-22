@@ -7,7 +7,7 @@ You can get "normalmap" there:
 
 For info about FGearthview, see the forum thread:\
   https://forum.flightgear.org/viewtopic.php?f=6&t=15754
-  
+
 or this FG-wiki-page:\
   http://wiki.flightgear.org/Earthview
 
@@ -19,13 +19,6 @@ This script runs on Linux (maybe Mac also?) in a Bash
 (Bourne Again Shell) - Windows is not supported (by the nature of the
 script). Maybe it works on windows as well, I don't know, feel free
 to try, and please let me know! :)
-
-This will download the raw images from http://visibleearth.nasa.gov - 
-~~their server is not very fast, so I provide an alternative download
-location: https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z
-This one is much quicker!~~ If you want the images directly from
-NASA, then provide "nasa" to the script, if you want the alternate
-server provide "alt" instead (see below),
 
 In the end you will have 8 world-textures in .png and .dds format.
 Generally .dds is better in performance, but it won't work on some
@@ -65,7 +58,6 @@ Additionally, there are some options you could specify (further
 explained below):
 * 1k | 2k | 4k | 8k | 16k
 * download | no-download
-* nasa | alt
 * world
 * clouds
 * heights
@@ -124,6 +116,14 @@ You may want to check:
 apt search imagemagick
 ```
 
+### IMPORTANT!
+Check out your ```/etc/ImageMagick-6/policy.xml```
+On some distros, there are limits set, which will cause IM to abort the conversion of images larger than [rediculously small images](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=860763). Edit and set to our needs:
+* width: at least 55000
+* height: at least 55000
+* area: less than your free RAM
+
+### Normalmap
 For normalmap, you can download and compile it from
   https://github.com/planrich/normalmap
 
@@ -168,15 +168,6 @@ For normalmap, you can download and compile it from
 **download**\
         Causes the script to download the needed data, this is the
         default behavior.
-
-**nasa**\
-        Causes the script to download directly from 
-        http://visibleearth.nasa.gov (default).
-
-**alt**\
-        Download instead from
-        https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z
-        which is much faster!
 
 **no-download**\
         Causes the script to skip the download function. If you

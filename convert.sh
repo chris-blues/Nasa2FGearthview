@@ -33,16 +33,9 @@ function showHelp
    echo "https://github.com/chris-blues/Nasa2FGearthview"
    echo
    echo "Usage:"
-   echo "./convert.sh [ download no-download nasa alt world clouds heights"
+   echo "./convert.sh [ download no-download world clouds heights"
    echo "               1k 2k 4k 8k 16k cleanup rebuild ]"
    echo
-   echo "* Append \"nasa\" to download the needed images from NASA"
-   echo "  -> This will download up to 2.4GB of data!"
-   echo "  -> wget can continue interrupted downloads!"
-   echo "* Append \"alt\" to download the needed images from an ALTERNATE"
-   echo "  server, currently from musicchris.de"
-   echo "  If omitted, download will use default server. See README for more"
-   echo "  details."
    echo "* Append \"no-download\" to the command to skip the download"
    echo "  process alltogether. Only makes sense if you already got"
    echo "  the necessary data."
@@ -113,8 +106,6 @@ if [ $1 == "-h" ] ; then showHelp ; fi
 ################################
 for ARG in "$@"
 do
-  if [ $ARG == "nasa" ] ; then DOWNLOAD="true" ; DL_LOCATION="NASA" ;  echo "Downloading from visibleearth.nasa.gov" ; fi
-  if [ $ARG == "alt" ] ; then DOWNLOAD="true" ; DL_LOCATION="ALT" ;  echo "Downloading from alternate location" ; fi
   if [ $ARG == "no-download" ] ; then DOWNLOAD="false" ; echo "Skipping the download process" ; fi
   if [ $ARG == "world" ] ; then WORLD="true" ; fi
   if [ $ARG == "clouds" ] ; then CLOUDS="true" ; fi
@@ -145,6 +136,9 @@ CHECKHEIGHTS=$HEIGHTS
 ########################
 ## Set some variables ##
 ########################
+
+DL_LOCATION="NASA"
+
 mkdir -p tmp
 export MAGICK_TMPDIR=${PWD}/tmp
 echo "tmp-dir: $MAGICK_TMPDIR"
@@ -182,13 +176,16 @@ https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev
 https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_D1_grey_geo.tif
 https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_D2_grey_geo.tif"
 
-ALTERNATE_URL="https://musicchris.de/download/FG/EarthView/raw-data-NASA.7z"
-ALTERNATE_FILENAME="raw-data-NASA.7z"
-
-if ! [ -x "$(command -v $NORMALBIN)" ]; then
-  echo ">>>>>>>>>>>>  Error: $NORMALBIN binary not found! <<<<<<<<<<<<<"
-  echo "You can get it from: https://github.com/planrich/normalmap"
-  HEIGHTS="false"
+if ! [ -x "$(command -v $NORMALBIN)" ]
+  then
+    if ! [ -x "./${NORMALBIN}" ]
+      then
+        echo ">>>>>>>>>>>>  Error: $NORMALBIN binary not found! <<<<<<<<<<<<<"
+        echo "You can get it from: https://github.com/planrich/normalmap"
+        HEIGHTS="false"
+      else
+        NORMALBIN="./${NORMALBIN}"
+    fi
 fi
 
 
@@ -284,7 +281,7 @@ function rebuild
       rm tmp/height*
      }
    fi
-   
+
   }
 
 function cleanUp
@@ -365,24 +362,16 @@ function downloadImages
    if [ -z $DL_LOCATION ]
    then
        DL_LOCATION="NASA"
-   fi        
+   fi
 
    if [ $DL_LOCATION == "NASA" ]
    then
        echo "## Downloading images from visibleearth.nasa.gov ##" | tee -a $LOGFILE_GENERAL
    fi
 
-   if [ $DL_LOCATION == "ALT" ]
-   then
-       echo "##    Downloading images from  musicchris.de     ##" | tee -a $LOGFILE_GENERAL
-       f=$ALTERNATE_URL
-       DL_LOCATION="musicchris.de"
-       FILENAME=$(echo $f | sed 's@.*/@@')
-   fi
-
    echo "###################################################" | tee -a $LOGFILE_GENERAL
-   
-   if [ $WORLD == "true" ] 
+
+   if [ $WORLD == "true" ]
    then
      if [ $DL_LOCATION == "NASA" ]
      then
@@ -394,19 +383,17 @@ function downloadImages
    then
      if [ $DL_LOCATION == "NASA" ]
      then
-       downloadClouds 
+       downloadClouds
      fi
    fi
 
-   if [ $HEIGHTS == "true" ] 
+   if [ $HEIGHTS == "true" ]
    then
      if [ $DL_LOCATION == "NASA" ]
      then
        downloadHeights
      fi
    fi
-
-   if [ $DL_LOCATION == "musicchris.de" ] ; then downloadMusicchris ; fi
   }
 
 function downloadWorld
@@ -416,7 +403,7 @@ function downloadWorld
    for f in $URLS_WORLD
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
-     wget --output-document=input/$FILENAME --continue --show-progress $f 2>> $LOGFILE_GENERAL
+     wget --output-document=input/$FILENAME --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
    done
   }
 
@@ -428,11 +415,11 @@ function downloadHeights
    for f in $URLS_HEIGHTS
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
-     wget --output-document=input/$FILENAME --continue --show-progress $f 2>> $LOGFILE_GENERAL
+     wget --output-document=input/$FILENAME --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
    done
   }
 
-  
+
 function downloadClouds
   {
    mkdir -p input
@@ -440,25 +427,8 @@ function downloadClouds
    for f in $URLS_CLOUDS
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
-     wget --output-document=input/$FILENAME --continue --show-progress $f 2>> $LOGFILE_GENERAL
+     wget --output-document=input/$FILENAME --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
    done
-  }
-
-function downloadMusicchris
-  {
-   mkdir -p input
-   echo "Downloading raw images... (ca 2.2 GB)" | tee -a $LOGFILE_GENERAL
-   for p in 1 2 3 4 5
-   do
-     wget --output-document=input/${FILENAME}.00${p} --continue --show-progress $ALTERNATE_URL | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
-   done
-   echo "Unpacking raw images..." | tee -a $LOGFILE_GENERAL
-   cd input
-   for p in 1 2 3 4 5
-   do
-   7z e -bt -y raw-data-NASA.7z.00${p} 2>> ../$LOGFILE_GENERAL
-   done
-   cd ..
   }
 
 function generateWorld
@@ -506,7 +476,7 @@ function generateWorld
    let "RESIZE_H = ( $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH ) ) * 2"
    if [ ! -s "tmp/nightlights_${RESIZE_W}x${RESIZE_H}.mpc" ]
    then
-     for r in 16384 8192 4096 2048
+     for r in $RESOLUTION
      do
        if [ $r -le $RESOLUTION_MAX ]
        then continue
@@ -1282,7 +1252,7 @@ W"
      echo "#############################" | tee -a $LOGFILE_GENERAL
      for r in $RESOLUTION
      do
-       {    
+       {
         mkdir -p output/$r
         echo
         echo "--> Writing output/${r}/clouds_${t}.png @ ${r}x${r}" | tee -a $LOGFILE_GENERAL
@@ -1329,13 +1299,13 @@ function generateHeights
    if [[ $NO_RESOLUTION_GIVEN == "true" ]]; then
        if [ $RESOLUTION_MAX -eq 16384 ] ; then RESOLUTION_MAX=8192 ; fi
    fi
-      
+
    let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
    let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
    let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
    let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
    let "SIZE = 2 * $IMAGE_BORDERLESS"
-   
+
    mkdir -p tmp
    mkdir -p output
 
@@ -1400,7 +1370,7 @@ function generateHeights
    if [ -z $LASTTIME ] ; then LASTTIME=$STARTTIME ; fi
    echo "input/gebco_08_rev_elev_[A-D][12]_grey_geo.tif -> tmp/heights_seamless_${IMAGE_BORDERLESS}_[NS][1-4].mpc" >> $LOGFILE_TIME
    getProcessingTime
-  
+
    echo | tee -a $LOGFILE_GENERAL
    echo "#####################################" | tee -a $LOGFILE_GENERAL
    echo "## Put a ${BORDER_WIDTH}px border to each side ##" | tee -a $LOGFILE_GENERAL
@@ -1445,7 +1415,7 @@ function generateHeights
    let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
    let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
    let "SIZE = 2 * $IMAGE_BORDERLESS"
-   
+
    CROP_TOP="${IMAGE_BORDERLESS}x1+${BORDER_WIDTH}+${BORDER_WIDTH}"
    CROP_RIGHT="1x${IMAGE_BORDERLESS}+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
    CROP_BOTTOM="${IMAGE_BORDERLESS}x1+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
@@ -1564,7 +1534,7 @@ function generateHeights
 
      for r in $RESOLUTION
      do
-       {        
+       {
         mkdir -p output/$r
         set +x
         echo
@@ -1575,7 +1545,7 @@ function generateHeights
           tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc \
           -resize ${r}x${r} \
           output/${r}/heights_${t}.png
-        
+
         echo
         echo "--> Writing output/${r}/normalmap_earth_${t}.png @ ${r}x${r}"
         $NORMALBIN $NORMALOPTS output/${r}/heights_${t}.png output/${r}/normalmap_earth_${t}.png
@@ -1617,7 +1587,7 @@ function generateHeights
 
 
 
-  
+
 function checkResults
   {
    echo | tee -a $LOGFILE_GENERAL
@@ -1722,7 +1692,7 @@ function checkResults
    fi
 
 
-   
+
    if [[ $CHECKWORLD == "true" ]]
    then
      {
@@ -1797,7 +1767,7 @@ echo $TIME | tee -a $LOGFILE_TIME
 echo | tee -a $LOGFILE_GENERAL
 printf "Target:     " | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
 if [ $CLOUDS == "true" ] ; then printf "clouds " | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME ; fi
-if [ $HEIGHTS == "true" ] ; then printf "heights" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME ; fi
+if [ $HEIGHTS == "true" ] ; then printf "heights " | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME ; fi
 if [ $WORLD == "true" ] ;  then printf "world " | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME ; fi
 echo | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
 echo "Will work in ${RESOLUTION_MAX}x${RESOLUTION_MAX} resolution and will output" | tee -a $LOGFILE_GENERAL
