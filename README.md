@@ -11,6 +11,13 @@ For info about FGearthview, see the forum thread:\
 or this FG-wiki-page:\
   http://wiki.flightgear.org/Earthview
 
+### Caution!
+Don't use this script on a server! It will most likely cause
+Denial-of-service (DoS). When working on these huge images, the
+harddisk throughput will cease occasionally and CPU / RAM usage will
+spike tremendously! So, only use this script on your home desktop
+computer, or if you don't mind several long server-outages...
+
 
 ------------------------------------
 ## About:

@@ -154,18 +154,18 @@ LOGFILE_TIME="logs/${TIME}.time.log"
 NORMALBIN="normalmap"
 NORMALOPTS="-s 1 -f FILTER_PREWITT_3x3"
 
-URLS_WORLD="http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.A1.png
-http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.A2.png
-http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.B1.png
-http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.B2.png
-http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.C1.png
-http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.C2.png
-http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.D1.png
-http://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.D2.png
-http://eoimages.gsfc.nasa.gov/images/imagerecords/79000/79765/dnb_land_ocean_ice.2012.54000x27000_geo.tif"
+URLS_WORLD="https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.A1.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.A2.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.B1.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.B2.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.C1.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.C2.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.D1.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.D2.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/79000/79765/dnb_land_ocean_ice.2012.54000x27000_geo.tif"
 
-URLS_CLOUDS="http://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57747/cloud.E.2001210.21600x21600.png
-http://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57747/cloud.W.2001210.21600x21600.png"
+URLS_CLOUDS="https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57747/cloud.E.2001210.21600x21600.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57747/cloud.W.2001210.21600x21600.png"
 
 URLS_HEIGHTS="https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_A1_grey_geo.tif
 https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_A2_grey_geo.tif
@@ -186,6 +186,10 @@ if ! [ -x "$(command -v $NORMALBIN)" ]
       else
         NORMALBIN="./${NORMALBIN}"
     fi
+  else
+    echo ">>>>>>>>>>>>  Error: $NORMALBIN binary not found! <<<<<<<<<<<<<"
+    echo "You can get it from: https://github.com/planrich/normalmap"
+    HEIGHTS="false"
 fi
 
 
@@ -882,24 +886,40 @@ function generateWorld
         echo
         echo "--> Writing output/${r}/world_${t}.dds @ ${r}x${r}"
         # set -x
-        convert \
-          -monitor \
-           tmp/world_${RESOLUTION_MAX}_done_${t}.mpc \
-          -resize ${r}x${r} \
-          -flip \
-          -define dds:compression=dxt5 \
-           output/${r}/world_${t}.dds
-        set +x
-        echo
+
+        if [ ! -s "output/${r}/world_${t}.dds" ]
+        then
+
+          convert \
+            -monitor \
+             tmp/world_${RESOLUTION_MAX}_done_${t}.mpc \
+            -resize ${r}x${r} \
+            -flip \
+            -define dds:compression=dxt5 \
+             output/${r}/world_${t}.dds
+          set +x
+          echo
+
+        else echo "=> Skipping existing file: output/${r}/world_${t}.dds" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
+        fi
+
         echo "--> Writing output/${r}/world_${t}.png @ ${r}x${r}"
-        # set -x
-        convert \
-          -monitor \
-           tmp/world_${RESOLUTION_MAX}_done_${t}.mpc \
-          -resize ${r}x${r} \
-           output/${r}/world_${t}.png
-        set +x
-        echo
+
+        if [ ! -s "output/${r}/world_${t}.png" ]
+        then
+
+          # set -x
+          convert \
+            -monitor \
+             tmp/world_${RESOLUTION_MAX}_done_${t}.mpc \
+            -resize ${r}x${r} \
+             output/${r}/world_${t}.png
+          set +x
+          echo
+
+        else echo "=> Skipping existing file: output/${r}/world_${t}.png" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
+
+        fi
        }
      done
 
@@ -1255,12 +1275,20 @@ W"
        {
         mkdir -p output/$r
         echo
-        echo "--> Writing output/${r}/clouds_${t}.png @ ${r}x${r}" | tee -a $LOGFILE_GENERAL
-        convert \
-          -monitor \
-          tmp/clouds_${RESOLUTION_MAX}_${t}_done.mpc \
-          -resize ${r}x${r} \
-          output/${r}/clouds_${t}.png
+
+        if [ ! -s "output/${r}/clouds_${t}.png" ]
+        then
+
+          echo "--> Writing output/${r}/clouds_${t}.png @ ${r}x${r}" | tee -a $LOGFILE_GENERAL
+          convert \
+            -monitor \
+             tmp/clouds_${RESOLUTION_MAX}_${t}_done.mpc \
+            -resize ${r}x${r} \
+             output/${r}/clouds_${t}.png
+
+        else echo "=> Skipping existing file: output/${r}/clouds_${t}.png" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
+        fi
+
        }
      done
 
@@ -1540,15 +1568,28 @@ function generateHeights
         echo
         echo "--> Writing output/${r}/heights_${t}.png @ ${r}x${r}"
         # set -x
-        convert \
-          -monitor \
-          tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc \
-          -resize ${r}x${r} \
-          output/${r}/heights_${t}.png
+
+        if [ ! -s "output/${r}/heights_${t}.png" ]
+        then
+
+          convert \
+            -monitor \
+             tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc \
+            -resize ${r}x${r} \
+             output/${r}/heights_${t}.png
+
+        else echo "=> Skipping existing file: tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
+        fi
 
         echo
         echo "--> Writing output/${r}/normalmap_earth_${t}.png @ ${r}x${r}"
-        $NORMALBIN $NORMALOPTS output/${r}/heights_${t}.png output/${r}/normalmap_earth_${t}.png
+        if [ ! -s "output/${r}/normalmap_earth_${t}.png" ]
+        then
+
+          $NORMALBIN $NORMALOPTS output/${r}/heights_${t}.png output/${r}/normalmap_earth_${t}.png
+
+        else echo "=> Skipping existing file: output/${r}/normalmap_earth_${t}.png" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
+        fi
 
         set +x
         echo
