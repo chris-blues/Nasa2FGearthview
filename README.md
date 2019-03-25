@@ -84,10 +84,9 @@ So your call could look sth like this:
 
 WARNING!
 
-This script uses a *lot* disk space! Make sure you have at least 90GB
-available!\
-In my last test run, which generated all maps in all resolutions, the
-disk usage was about 330GB! Beware!\
+This script uses a *lot* disk space! In my last test run, which
+generated all maps in all resolutions, the disk usage was about 330GB!
+Beware!\
 Also, I wouldn't recommend doing this on a SSD! While SSDs are
 generally faster, they also get more wear-and-tear when write such
 huge files. So this script might cause your SSD to die earlier as it

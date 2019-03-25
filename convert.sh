@@ -22,7 +22,7 @@
 # -add normalmapping output + small improvements
 
 
-VERSION="v0.12"
+VERSION="v0.13"
 
 # make sure the script halts on error
 set -e
