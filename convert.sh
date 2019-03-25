@@ -1274,7 +1274,6 @@ W"
      do
        {
         mkdir -p output/$r
-        echo
 
         if [ ! -s "output/${r}/clouds_${t}.png" ]
         then
@@ -1285,6 +1284,7 @@ W"
              tmp/clouds_${RESOLUTION_MAX}_${t}_done.mpc \
             -resize ${r}x${r} \
              output/${r}/clouds_${t}.png
+          echo
 
         else echo "=> Skipping existing file: output/${r}/clouds_${t}.png" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
         fi
@@ -1349,7 +1349,7 @@ function generateHeights
      if [ ! -s "tmp/heights_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc" ]
      then
        {
-        for r in 16384 8192 4096 2048
+        for r in $RESOLUTION
         do
           if [ $r -le $RESOLUTION_MAX ]
           then
@@ -1577,11 +1577,11 @@ function generateHeights
              tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc \
             -resize ${r}x${r} \
              output/${r}/heights_${t}.png
+          echo
 
         else echo "=> Skipping existing file: tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc" | tee -a $LOGFILE_GENERAL | tee -a $LOGFILE_TIME
         fi
 
-        echo
         echo "--> Writing output/${r}/normalmap_earth_${t}.png @ ${r}x${r}"
         if [ ! -s "output/${r}/normalmap_earth_${t}.png" ]
         then

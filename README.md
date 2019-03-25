@@ -85,7 +85,14 @@ So your call could look sth like this:
 WARNING!
 
 This script uses a *lot* disk space! Make sure you have at least 90GB
-available!
+available!\
+In my last test run, which generated all maps in all resolutions, the
+disk usage was about 330GB! Beware!\
+Also, I wouldn't recommend doing this on a SSD! While SSDs are
+generally faster, they also get more wear-and-tear when write such
+huge files. So this script might cause your SSD to die earlier as it
+should. Generally speaking, this won't kill your SSD, but it might
+cause it to die earlier. HDDs are much more robust in that respect.
 
 Also, this script will run for a *very long* time! It might be best to
 let it run over night - your computer might become unresponsive from
@@ -125,7 +132,10 @@ apt search imagemagick
 
 ### IMPORTANT!
 Check out your ```/etc/ImageMagick-6/policy.xml```
-On some distros, there are limits set, which will cause IM to abort the conversion of images larger than [rediculously small images](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=860763). Edit and set to our needs:
+On some distros, there are limits set, which will cause IM to abort
+the conversion of images larger than
+[rediculously small images](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=860763).
+Edit and set to our needs:
 * width: at least 55000
 * height: at least 55000
 * area: less than your free RAM
@@ -133,6 +143,9 @@ On some distros, there are limits set, which will cause IM to abort the conversi
 ### Normalmap
 For normalmap, you can download and compile it from
   https://github.com/planrich/normalmap
+
+You can install the binary into your system, or just copy it next to
+convert.sh - both should work.
 
 ------------------------------------
 ## Targets:
@@ -174,7 +187,7 @@ For normalmap, you can download and compile it from
 
 **download**\
         Causes the script to download the needed data, this is the
-        default behavior.
+        default behavior (and can be omitted).
 
 **no-download**\
         Causes the script to skip the download function. If you
