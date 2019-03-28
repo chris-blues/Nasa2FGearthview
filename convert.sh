@@ -186,10 +186,6 @@ if ! [ -x "$(command -v $NORMALBIN)" ]
       else
         NORMALBIN="./${NORMALBIN}"
     fi
-  else
-    echo ">>>>>>>>>>>>  Error: $NORMALBIN binary not found! <<<<<<<<<<<<<"
-    echo "You can get it from: https://github.com/planrich/normalmap"
-    HEIGHTS="false"
 fi
 
 
