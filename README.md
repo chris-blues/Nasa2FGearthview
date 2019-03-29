@@ -11,12 +11,13 @@ For info about FGearthview, see the forum thread:\
 or this FG-wiki-page:\
   http://wiki.flightgear.org/Earthview
 
-### Caution!
-Don't use this script on a server! It will most likely cause
-Denial-of-service (DoS). When working on these huge images, the
-harddisk throughput will cease occasionally and CPU / RAM usage will
-spike tremendously! So, only use this script on your home desktop
-computer, or if you don't mind several long server-outages...
+
+> ### Caution!
+> Don't use this script on a server! It will most likely cause
+> Denial-of-service (DoS). When working on these huge images, the
+> harddisk throughput will cease occasionally and CPU / RAM usage will
+> spike tremendously! So, only use this script on your home desktop
+> computer, or if you don't mind several long server-outages...
 
 
 ------------------------------------
@@ -82,21 +83,21 @@ So your call could look sth like this:
 ------------------------------------
 ## Requirements:
 
-WARNING!
-
-This script uses a *lot* disk space! In my last test run, which
-generated all maps in all resolutions, the disk usage was about 330GB!
-Beware!\
-Also, I wouldn't recommend doing this on a SSD! While SSDs are
-generally faster, they also get more wear-and-tear when write such
-huge files. So this script might cause your SSD to die earlier as it
-should. Generally speaking, this won't kill your SSD, but it might
-cause it to die earlier. HDDs are much more robust in that respect.
-
-Also, this script will run for a *very long* time! It might be best to
-let it run over night - your computer might become unresponsive from
-time to time, due to the heavy CPU and memory load, which tends to
-occur, when converting 54000x27000 images. ;-)
+> WARNING!
+>
+> This script uses a *lot* disk space! In my last test run, which
+> generated all maps in all resolutions, the disk usage was about 330GB!
+> Beware!\
+> Also, I wouldn't recommend doing this on a SSD! While SSDs are
+> generally faster, they also get more wear-and-tear when write such
+> huge files. So this script might cause your SSD to die earlier as it
+> should. Generally speaking, this won't kill your SSD, but it might
+> cause it to die earlier. HDDs are much more robust in that respect.
+>
+> Also, this script will run for a *very long* time! It might be best to
+> let it run over night - your computer might become unresponsive from
+> time to time, due to the heavy CPU and memory load, which tends to
+> occur, when converting 54000x27000 images. ;-)
 
 I also recommend to deactivate swapping!
 ```shell
