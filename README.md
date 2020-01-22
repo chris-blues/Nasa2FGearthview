@@ -3,7 +3,7 @@ A bash-script to convert NASA satellite images to ready-to-use
 textures for FG's EarthView using ImageMagick and normalmap
 
 You can get "normalmap" there:
-  https://github.com/planrich/normalmap
+  https://github.com/eatdust/normalmap
 
 For info about FGearthview, see the forum thread:\
   https://forum.flightgear.org/viewtopic.php?f=6&t=15754
@@ -131,10 +131,10 @@ apt search imagemagick
 ```
 
 ### IMPORTANT!
-Check out your ```/etc/ImageMagick-6/policy.xml```
+Check out your ```/etc/ImageMagick-7/policy.xml```
 On some distros, there are limits set, which will cause IM to abort
 the conversion of images larger than
-[rediculously small images](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=860763).
+[ridiculously small images](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=860763).
 Edit and set to our needs:
 * width: at least 55000
 * height: at least 55000
