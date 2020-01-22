@@ -44,7 +44,7 @@ function showHelp
    echo "* Append \"heights\" to the command to generate height tiles"
    echo "  and the normalmaps needed by EarthView. Notice that you need"
    echo "  the normalmap binary to be installed. You can get it from:"
-   echo "  https://github.com/planrich/normalmap"
+   echo "  https://github.com/eatdust/normalmap"
    echo "* Append \"all\" to the command to generate all - world, clouds"
    echo "  and heights"
    echo "* Append the size of the tiles (1k, 2k, 4k, 8k, 16k). If you"
@@ -148,11 +148,11 @@ TIME=$(date +"%Y-%m-%d_%H:%M:%S")
 LOGFILE_GENERAL="logs/${TIME}.log"
 LOGFILE_TIME="logs/${TIME}.time.log"
 
-#command line gimp plugin from https://github.com/planrich/normalmap
+#command line gimp plugin from https://github.com/eatdust/normalmap
 #higher filters (5x5) create too sharp features (no rescaling, I
-#assume earthview do its own normalization)
+#assume earthview do its own normalization). We also put in the alpha channel the inverse_height
 NORMALBIN="normalmap"
-NORMALOPTS="-s 1 -f FILTER_PREWITT_3x3"
+NORMALOPTS="-s 1 -f FILTER_PREWITT_3x3 -a ALPHA_INVERSE_HEIGHT"
 
 URLS_WORLD="https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.A1.png
 https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.A2.png
@@ -181,7 +181,7 @@ if ! [ -x "$(command -v $NORMALBIN)" ]
     if ! [ -x "./${NORMALBIN}" ]
       then
         echo ">>>>>>>>>>>>  Error: $NORMALBIN binary not found! <<<<<<<<<<<<<"
-        echo "You can get it from: https://github.com/planrich/normalmap"
+        echo "You can get it from: https://github.com/eatdust/normalmap"
         HEIGHTS="false"
       else
         NORMALBIN="./${NORMALBIN}"
