@@ -19,10 +19,14 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 # v0.12: Chris Ringeval (eatdirt):
-# -add normalmapping output + small improvements
+# -add normalmapping output + small improvements.
+#
+# v0.14: Chris Ringeval (eatdirt):
+# -add alpha channel as inverse height to normalmap (normalmap binary
+# modified, forked from plainrich), allows for changing memory limits
+# and resizing method.
 
-
-VERSION="v0.13"
+VERSION="v0.14"
 
 # make sure the script halts on error
 set -e
@@ -139,6 +143,9 @@ CHECKHEIGHTS=$HEIGHTS
 
 DL_LOCATION="NASA"
 
+MEM_LIMIT=512
+RESIZE_METHOD="-distort Resize"
+
 mkdir -p tmp
 export MAGICK_TMPDIR=${PWD}/tmp
 echo "tmp-dir: $MAGICK_TMPDIR"
@@ -150,7 +157,8 @@ LOGFILE_TIME="logs/${TIME}.time.log"
 
 #command line gimp plugin from https://github.com/eatdust/normalmap
 #higher filters (5x5) create too sharp features (no rescaling, I
-#assume earthview do its own normalization). We also put in the alpha channel the inverse_height
+#assume earthview do its own normalization). We also put in the alpha
+#channel the inverse_height
 NORMALBIN="normalmap"
 NORMALOPTS="-s 1 -f FILTER_PREWITT_3x3 -a ALPHA_INVERSE_HEIGHT"
 
@@ -456,8 +464,8 @@ function generateWorld
      # set -x
        convert \
          -monitor \
-         -limit memory 32 \
-         -limit map 32 \
+         -limit memory $MEM_LIMIT \
+         -limit map $MEM_LIMIT \
          input/dnb_land_ocean_ice.2012.54000x27000_geo.tif \
          tmp/nightlights_54000x27000.mpc
      set +x
@@ -503,10 +511,10 @@ function generateWorld
        # set -x
        convert \
          -monitor \
-         -limit memory 32 \
-         -limit map 32 \
+         -limit memory $MEM_LIMIT \
+         -limit map $MEM_LIMIT \
          tmp/nightlights_54000x27000.mpc \
-         -resize ${RESIZE_W}x${RESIZE_H} \
+         $RESIZE_METHOD ${RESIZE_W}x${RESIZE_H} \
          tmp/nightlights_${RESIZE_W}x${RESIZE_H}.mpc
        set +x
      else
@@ -516,10 +524,10 @@ function generateWorld
        # set -x
        convert \
          -monitor \
-         -limit memory 32 \
-         -limit map 32 \
+         -limit memory $MEM_LIMIT \
+         -limit map $MEM_LIMIT \
          tmp/nightlights_${I_W}x${I_H}.mpc \
-         -resize ${RESIZE_W}x${RESIZE_H} \
+         $RESIZE_METHOD ${RESIZE_W}x${RESIZE_H} \
          tmp/nightlights_${RESIZE_W}x${RESIZE_H}.mpc
        set +x
      fi
@@ -538,8 +546,8 @@ function generateWorld
      # set -x
        convert \
          -monitor \
-         -limit memory 32 \
-         -limit map 32 \
+         -limit memory $MEM_LIMIT \
+         -limit map $MEM_LIMIT \
          tmp/nightlights_${RESIZE_W}x${RESIZE_H}.mpc \
          -channel R -level 7.8%,100%,1.5 \
          -channel G -level 13.7%,100%,1.5 \
@@ -562,8 +570,8 @@ function generateWorld
      # set -x
      convert \
        -monitor \
-       -limit memory 32 \
-       -limit map 32 \
+       -limit memory $MEM_LIMIT \
+       -limit map $MEM_LIMIT \
        tmp/nightlights_${RESIZE_W}x${RESIZE_H}_lowColorsCut.mpc \
        -crop ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} +repage \
        -alpha Off \
@@ -642,11 +650,11 @@ function generateWorld
              # set -x
              convert \
                -monitor \
-               -limit memory 32 \
-               -limit map 32 \
+               -limit memory $MEM_LIMIT \
+               -limit map $MEM_LIMIT \
                tmp/world_seamless_${IMAGE_BORDERLESS}_N2.mpc \
                -crop 1x1+1+1 \
-               -resize ${IMAGE_BORDERLESS}x${OVERLAY_HEIGHT}\! \
+               $RESIZE_METHOD ${IMAGE_BORDERLESS}x${OVERLAY_HEIGHT}\! \
                tmp/bluebar.mpc
                set +x
            fi
@@ -657,10 +665,10 @@ function generateWorld
               # set -x
               convert \
                 -monitor \
-                -limit memory 32 \
-                -limit map 32 \
+                -limit memory $MEM_LIMIT \
+                -limit map $MEM_LIMIT \
                 input/world.200408.3x21600x21600.${t}.png \
-                -resize ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
+                $RESIZE_METHOD ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
                 tmp/bluebar.mpc \
                 -geometry +0+0 \
                 -composite \
@@ -673,10 +681,10 @@ function generateWorld
               # set -x
               convert \
                 -monitor \
-                -limit memory 32 \
-                -limit map 32 \
+                -limit memory $MEM_LIMIT \
+                -limit map $MEM_LIMIT \
                 input/world.200408.3x21600x21600.${t}.png \
-                -resize ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
+                $RESIZE_METHOD ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
                 tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
               set +x
               }
@@ -686,10 +694,10 @@ function generateWorld
           set -x
           convert \
             -monitor \
-            -limit memory 32 \
-            -limit map 32 \
+            -limit memory $MEM_LIMIT \
+            -limit map $MEM_LIMIT \
              tmp/world_seamless_${TIMESAVER_SIZE}_${DEST}.mpc \
-            -resize ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
+            $RESIZE_METHOD ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
              tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
           set +x
         fi
@@ -828,13 +836,13 @@ function generateWorld
           -monitor \
            tmp/world_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
           -crop $CROP \
-          -resize $RESIZE\! \
+          $RESIZE_METHOD $RESIZE\! \
            tmp/world_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
         convert \
           -monitor \
           tmp/world_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
           -crop $CROPCORNER \
-          -resize ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
+          $RESIZE_METHOD ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
           tmp/world_${RESOLUTION_MAX}_${t}_seam_${CORNER_NAME}.mpc
         convert \
           -monitor \
@@ -889,7 +897,7 @@ function generateWorld
           convert \
             -monitor \
              tmp/world_${RESOLUTION_MAX}_done_${t}.mpc \
-            -resize ${r}x${r} \
+            $RESIZE_METHOD ${r}x${r} \
             -flip \
             -define dds:compression=dxt5 \
              output/${r}/world_${t}.dds
@@ -908,7 +916,7 @@ function generateWorld
           convert \
             -monitor \
              tmp/world_${RESOLUTION_MAX}_done_${t}.mpc \
-            -resize ${r}x${r} \
+            $RESIZE_METHOD ${r}x${r} \
              output/${r}/world_${t}.png
           set +x
           echo
@@ -1007,7 +1015,7 @@ W"
           convert \
             -monitor \
             input/cloud.${t}.2001210.21600x21600.png \
-            -resize ${SIZE}x${SIZE} \
+            $RESIZE_METHOD ${SIZE}x${SIZE} \
             -alpha copy \
             +level-colors white \
             tmp/cloud_T_${SIZE}_${t}.mpc
@@ -1018,7 +1026,7 @@ W"
           convert \
             -monitor \
             tmp/cloud_T_${TIMESAVER_SIZE}_${t}.mpc \
-            -resize ${SIZE}x${SIZE} \
+            $RESIZE_METHOD ${SIZE}x${SIZE} \
             tmp/cloud_T_${SIZE}_${t}.mpc
           set +x
         fi
@@ -1223,13 +1231,13 @@ W"
           -monitor \
           tmp/clouds_seams_${RESOLUTION_MAX}_${t}.mpc \
           -crop $CROP \
-          -resize $RESIZE\! \
+          $RESIZE_METHOD $RESIZE\! \
           tmp/clouds_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
         convert \
           -monitor \
           tmp/clouds_seams_${RESOLUTION_MAX}_${t}.mpc \
           -crop $CROPCORNER \
-          -resize ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
+          $RESIZE_METHOD ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
           tmp/clouds_${RESOLUTION_MAX}_${t}_seam_${CORNER_NAME}.mpc
         convert \
           -monitor \
@@ -1278,7 +1286,7 @@ W"
           convert \
             -monitor \
              tmp/clouds_${RESOLUTION_MAX}_${t}_done.mpc \
-            -resize ${r}x${r} \
+            $RESIZE_METHOD ${r}x${r} \
              output/${r}/clouds_${t}.png
           echo
 
@@ -1368,10 +1376,10 @@ function generateHeights
             # set -x
               convert \
                 -monitor \
-                -limit memory 32 \
-                -limit map 32 \
+                -limit memory $MEM_LIMIT \
+                -limit map $MEM_LIMIT \
                 input/gebco_08_rev_elev_${t}_grey_geo.tif \
-                -resize ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
+                $RESIZE_METHOD ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
                 tmp/heights_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
               set +x
         else
@@ -1379,10 +1387,10 @@ function generateHeights
            set -x
           convert \
             -monitor \
-            -limit memory 32 \
-            -limit map 32 \
+            -limit memory $MEM_LIMIT \
+            -limit map $MEM_LIMIT \
             tmp/heights_seamless_${TIMESAVER_SIZE}_${DEST}.mpc \
-            -resize ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
+            $RESIZE_METHOD ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
             tmp/heights_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
           set +x
         fi
@@ -1507,13 +1515,13 @@ function generateHeights
           -monitor \
           tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
           -crop $CROP \
-          -resize $RESIZE\! \
+          $RESIZE_METHOD $RESIZE\! \
           tmp/heights_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
         convert \
           -monitor \
           tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
           -crop $CROPCORNER \
-          -resize ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
+          $RESIZE_METHOD ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
           tmp/heights_${RESOLUTION_MAX}_${t}_seam_${CORNER_NAME}.mpc
         convert \
           -monitor \
@@ -1571,7 +1579,7 @@ function generateHeights
           convert \
             -monitor \
              tmp/heights_${RESOLUTION_MAX}_done_${t}.mpc \
-            -resize ${r}x${r} \
+            $RESIZE_METHOD ${r}x${r} \
              output/${r}/heights_${t}.png
           echo
 
