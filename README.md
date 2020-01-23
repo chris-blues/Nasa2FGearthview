@@ -142,7 +142,7 @@ Edit and set to our needs:
 
 ### Normalmap
 For normalmap, you can download and compile it from
-  https://github.com/planrich/normalmap
+  https://github.com/eatdust/normalmap
 
 You can install the binary into your system, or just copy it next to
 convert.sh - both should work.
