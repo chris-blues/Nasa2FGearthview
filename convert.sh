@@ -143,8 +143,13 @@ CHECKHEIGHTS=$HEIGHTS
 
 DL_LOCATION="NASA"
 
-MEM_LIMIT=512
-RESIZE_METHOD="-distort Resize"
+MEM_LIMIT=512MiB
+#more info here: https://imagemagick.org/Usage/filter/nicolas/
+#very long
+#RESIZE_METHOD="-filter LanczosSharp -distort Resize"
+#RESIZE_METHOD="-distort Resize"
+#faster
+RESIZE_METHOD="-resize"
 
 mkdir -p tmp
 export MAGICK_TMPDIR=${PWD}/tmp
