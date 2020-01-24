@@ -522,7 +522,7 @@ function generateWorld
          -limit memory ${MEM_LIMIT} \
          -limit map ${MEM_LIMIT} \
          tmp/nightlights_54000x27000.mpc \
-         ${RESIZE_METHOD} ${RESIZE_W}x${RESIZE_H} \
+         ${RESIZE_METHOD} ${RESIZE_W}x${RESIZE_H}\! \
          tmp/nightlights_${RESIZE_W}x${RESIZE_H}.mpc
        set +x
      else
@@ -535,7 +535,7 @@ function generateWorld
          -limit memory ${MEM_LIMIT} \
          -limit map ${MEM_LIMIT} \
          tmp/nightlights_${I_W}x${I_H}.mpc \
-         ${RESIZE_METHOD} ${RESIZE_W}x${RESIZE_H} \
+         ${RESIZE_METHOD} ${RESIZE_W}x${RESIZE_H}\! \
          tmp/nightlights_${RESIZE_W}x${RESIZE_H}.mpc
        set +x
      fi
@@ -1025,7 +1025,7 @@ W"
             input/cloud.${t}.2001210.21600x21600.png \
             ${RESIZE_METHOD} ${SIZE}x${SIZE} \
             -alpha copy \
-            +level-colors white \
+            -channel RGB +level-colors white \
             tmp/cloud_T_${SIZE}_${t}.mpc
           set +x
         else
