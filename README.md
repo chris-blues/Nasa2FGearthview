@@ -3,7 +3,8 @@ A bash-script to convert NASA satellite images to ready-to-use
 textures for FG's EarthView using ImageMagick and normalmap
 
 You can get "normalmap" there:
-  https://github.com/eatdust/normalmap
+  ImageMagick6 and lower: https://github.com/planrich/normalmap
+  ImageMagick7: https://github.com/eatdust/normalmap
 
 For info about FGearthview, see the forum thread:\
   https://forum.flightgear.org/viewtopic.php?f=6&t=15754
@@ -142,7 +143,9 @@ Edit and set to our needs:
 
 ### Normalmap
 For normalmap, you can download and compile it from
-  https://github.com/eatdust/normalmap
+
+  ImageMagick6 and lower: https://github.com/planrich/normalmap
+  ImageMagick7: https://github.com/eatdust/normalmap
 
 You can install the binary into your system, or just copy it next to
 convert.sh - both should work.
