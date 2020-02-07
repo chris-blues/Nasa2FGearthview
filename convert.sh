@@ -218,13 +218,12 @@ if [ -z $RESOLUTION ]
     RESOLUTION_MAX="16384"
 fi
 if [ -z $RESOLUTION_MAX ] ; then RESOLUTION_MAX=$RESOLUTION ; fi
-let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
-let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
-let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
-let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
 
-NASA="A1
-B1
+
+# B1 generated first as we use it to fix A1, C1 and D1 polar cap
+# residuals
+NASA="B1
+A1
 C1
 D1
 A2
@@ -457,7 +456,12 @@ function generateWorld
    echo "####    Processing World    ####" | tee -a $LOGFILE_GENERAL
    echo "################################" | tee -a $LOGFILE_GENERAL
    echo | tee -a $LOGFILE_GENERAL
-
+#this settings are local to earch generateXXXX
+   let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
+   let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
+   let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
+   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
+   
    mkdir -p tmp
    mkdir -p output
 
@@ -652,8 +656,11 @@ function generateWorld
         done
         if [ $FOUND_BIGGER_WORLD_PICTURE != "true" ]
         then
-           ## Workaround for tiles N3 and N4 - there's a gray failure area at the top border - let's remove it!
-           if [ $t == "C1" ]
+           ## Workaround for tiles N1, N3 and N4 - there's a gray
+           ## failure area at the top border coming from the polar cap
+           ## and we remove it! We use N2 map (B1) to pick the pixel,
+           ## this has to be generated first
+           if [ $t == "A1" ]
            then
              # pick a sample pixel. The polar regions are all equally colored.
              let "OVERLAY_HEIGHT = ${RESOLUTION_MAX} / 14"
@@ -668,7 +675,7 @@ function generateWorld
                tmp/bluebar.mpc
                set +x
            fi
-           if [ $t == "C1" -o $t == "D1" ]
+           if [ $t == "C1" -o $t == "D1" -o $t == "A1" ]
            then
              {
               # copy the sample over to the tile:
