@@ -149,10 +149,12 @@ MEM_LIMIT=512MiB
 
 #more info here: https://imagemagick.org/Usage/filter/nicolas/
 #very long
-#RESIZE_METHOD="-filter LanczosSharp -distort Resize"
-#RESIZE_METHOD="-distort Resize"
+#RESIZE_METHOD="-filter LanczosSharp +remap -distort Resize"
+#STRETCH_METHOD="-resize"
+
 #faster
 RESIZE_METHOD="-resize"
+STRETCH_METHOD="-resize"
 
 mkdir -p tmp
 export MAGICK_TMPDIR=${PWD}/tmp
@@ -662,7 +664,7 @@ function generateWorld
                -limit map ${MEM_LIMIT} \
                tmp/world_seamless_${IMAGE_BORDERLESS}_N2.mpc \
                -crop 1x1+1+1 \
-               ${RESIZE_METHOD} ${IMAGE_BORDERLESS}x${OVERLAY_HEIGHT}\! \
+               ${STRETCH_METHOD} ${IMAGE_BORDERLESS}x${OVERLAY_HEIGHT}\! \
                tmp/bluebar.mpc
                set +x
            fi
@@ -727,7 +729,7 @@ function generateWorld
      then
        # set -x
        convert \
-         -monitor \
+         -monitor -alpha off \
          tmp/world_seamless_${IMAGE_BORDERLESS}_${t}.mpc \
          tmp/night_${IMAGE_BORDERLESS}_${t}_neg.mpc \
          -compose CopyOpacity \
@@ -844,13 +846,13 @@ function generateWorld
           -monitor \
            tmp/world_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
           -crop $CROP \
-          ${RESIZE_METHOD} $RESIZE\! \
+          ${STRETCH_METHOD} $RESIZE\! \
            tmp/world_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
         convert \
           -monitor \
           tmp/world_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
           -crop $CROPCORNER \
-          ${RESIZE_METHOD} ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
+          ${STRETCH_METHOD} ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
           tmp/world_${RESOLUTION_MAX}_${t}_seam_${CORNER_NAME}.mpc
         convert \
           -monitor \
@@ -1239,13 +1241,13 @@ W"
           -monitor \
           tmp/clouds_seams_${RESOLUTION_MAX}_${t}.mpc \
           -crop $CROP \
-          ${RESIZE_METHOD} $RESIZE\! \
+          ${STRETCH_METHOD} $RESIZE\! \
           tmp/clouds_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
         convert \
           -monitor \
           tmp/clouds_seams_${RESOLUTION_MAX}_${t}.mpc \
           -crop $CROPCORNER \
-          ${RESIZE_METHOD} ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
+          ${STRETCH_METHOD} ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
           tmp/clouds_${RESOLUTION_MAX}_${t}_seam_${CORNER_NAME}.mpc
         convert \
           -monitor \
@@ -1523,13 +1525,13 @@ function generateHeights
           -monitor \
           tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
           -crop $CROP \
-          ${RESIZE_METHOD} $RESIZE\! \
+          ${STRETCH_METHOD} $RESIZE\! \
           tmp/heights_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
         convert \
           -monitor \
           tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
           -crop $CROPCORNER \
-          ${RESIZE_METHOD} ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
+          ${STRETCH_METHOD} ${BORDER_WIDTH}x${BORDER_WIDTH}\! \
           tmp/heights_${RESOLUTION_MAX}_${t}_seam_${CORNER_NAME}.mpc
         convert \
           -monitor \
