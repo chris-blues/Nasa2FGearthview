@@ -474,6 +474,7 @@ function downloadWorld
    for f in $URLS_WORLD
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
+     sleep $[ ( $RANDOM % 10 )  + 1 ]s
      wget --output-document=input/$FILENAME --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
    done
   }
@@ -486,6 +487,7 @@ function downloadHeights
    for f in $URLS_HEIGHTS
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
+     sleep $[ ( $RANDOM % 10 )  + 1 ]s
      wget --output-document=input/$FILENAME --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
    done
   }
@@ -498,6 +500,7 @@ function downloadClouds
    for f in $URLS_CLOUDS
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
+     sleep $[ ( $RANDOM % 10 )  + 1 ]s
      wget --output-document=input/$FILENAME --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
    done
   }
