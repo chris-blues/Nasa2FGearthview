@@ -25,8 +25,14 @@
 # -add alpha channel as inverse height to normalmap (normalmap binary
 # modified, forked from plainrich), allows for changing memory limits
 # and resizing method.
+#
+# v0.15: Chris Ringeval (eatdirt):
+# - add support for downloading world textures for a given month. Done
+# by appending the name of the month to the command line. Default is
+# as before, namely August.
+#
 
-VERSION="v0.14"
+VERSION="v0.15"
 
 # make sure the script halts on error
 set -e
@@ -123,6 +129,18 @@ do
   if [ $ARG == "cleanup" ] ; then CLEANUP="true" ; fi
   if [ $ARG == "rebuild" ] ; then REBUILD="true" ; fi
   if [ $ARG == "check" ] ; then BUILDCHECKS="true" ; fi
+  if [ $ARG == "January" ] ; then MONTH="01" ; fi
+  if [ $ARG == "February" ] ; then MONTH="02" ; fi
+  if [ $ARG == "March" ] ; then MONTH="03" ; fi
+  if [ $ARG == "April" ] ; then MONTH="04" ; fi
+  if [ $ARG == "May" ] ; then MONTH="05" ; fi
+  if [ $ARG == "June" ] ; then MONTH="06" ; fi
+  if [ $ARG == "July" ] ; then MONTH="07" ; fi
+  if [ $ARG == "August" ] ; then MONTH="08" ; fi
+  if [ $ARG == "September" ] ; then MONTH="09" ; fi
+  if [ $ARG == "October" ] ; then MONTH="10" ; fi
+  if [ $ARG == "November" ] ; then MONTH="11" ; fi
+  if [ $ARG == "December" ] ; then MONTH="12" ; fi
 done
 if [ -z $DOWNLOAD ] ; then DOWNLOAD="true" ; fi
 if [ -z $WORLD ] ; then WORLD="false" ; fi
@@ -131,6 +149,7 @@ if [ -z $HEIGHTS ] ; then HEIGHTS="false" ; fi
 if [ -z $CLEANUP ] ; then CLEANUP="false" ; fi
 if [ -z $REBUILD ] ; then REBUILD="false" ; fi
 if [ -z $BUILDCHECKS ] ; then BUILDCHECKS="false" ; fi
+if [ -z $MONTH ] ; then MONTH="08" ; fi
 
 CHECKWORLD=$WORLD
 CHECKCLOUDS=$CLOUDS
@@ -172,14 +191,49 @@ LOGFILE_TIME="logs/${TIME}.time.log"
 NORMALBIN="normalmap"
 NORMALOPTS="-s 1 -f FILTER_PREWITT_3x3 -a ALPHA_INVERSE_HEIGHT"
 
-URLS_WORLD="https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.A1.png
-https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.A2.png
-https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.B1.png
-https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.B2.png
-https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.C1.png
-https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.C2.png
-https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.D1.png
-https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74117/world.200408.3x21600x21600.D2.png
+
+#set the upstream path to retrieve the world textures of the selected month
+
+IDWORLD=2004${MONTH}
+case $MONTH in
+    01)
+	IDPATH="73000/73938";;
+    02)
+	IDPATH="73000/73967";;
+    03)
+	IDPATH="73000/73992";;
+    04)
+	IDPATH="74000/74017";;
+    05)
+	IDPATH="74000/74042";;
+    06)
+	IDPATH="76000/76487";;
+    07)
+	IDPATH="74000/74092";;
+    08)
+	IDPATH="74000/74117";;
+    09)
+	IDPATH="74000/74142";;
+    10)
+	IDPATH="74000/74167";;    
+    11)
+	IDPATH="74000/74192";;
+    12)
+	IDPATH="74000/74218";;
+    *)
+        #should not be used but safer
+	IDPATH="74000/74117"
+        IDWORLD="200408";;
+esac    
+
+URLS_WORLD="https://eoimages.gsfc.nasa.gov/images/imagerecords/${IDPATH}/world.${IDWORLD}.3x21600x21600.A1.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/${IDPATH}/world.${IDWORLD}.3x21600x21600.A2.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/${IDPATH}/world.${IDWORLD}.3x21600x21600.B1.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/${IDPATH}/world.${IDWORLD}.3x21600x21600.B2.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/${IDPATH}/world.${IDWORLD}.3x21600x21600.C1.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/${IDPATH}/world.${IDWORLD}.3x21600x21600.C2.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/${IDPATH}/world.${IDWORLD}.3x21600x21600.D1.png
+https://eoimages.gsfc.nasa.gov/images/imagerecords/${IDPATH}/world.${IDWORLD}.3x21600x21600.D2.png
 https://eoimages.gsfc.nasa.gov/images/imagerecords/79000/79765/dnb_land_ocean_ice.2012.54000x27000_geo.tif"
 
 URLS_CLOUDS="https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57747/cloud.E.2001210.21600x21600.png
@@ -684,7 +738,7 @@ function generateWorld
                 -monitor \
                 -limit memory ${MEM_LIMIT} \
                 -limit map ${MEM_LIMIT} \
-                input/world.200408.3x21600x21600.${t}.png \
+                input/world.${IDWORLD}.3x21600x21600.${t}.png \
                 ${RESIZE_METHOD} ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
                 tmp/bluebar.mpc \
                 -geometry +0+0 \
@@ -700,7 +754,7 @@ function generateWorld
                 -monitor \
                 -limit memory ${MEM_LIMIT} \
                 -limit map ${MEM_LIMIT} \
-                input/world.200408.3x21600x21600.${t}.png \
+                input/world.${IDWORLD}.3x21600x21600.${t}.png \
                 ${RESIZE_METHOD} ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
                 tmp/world_seamless_${IMAGE_BORDERLESS}_${DEST}.mpc
               set +x
@@ -723,7 +777,7 @@ function generateWorld
      fi
    done
    # 3h, 12m, 9s
-   echo "input/world.200408.3x21600x21600.[A-D][12].png -> tmp/world_seamless_${IMAGE_BORDERLESS}_[NS][1-4].mpc" >> $LOGFILE_TIME
+   echo "input/world.${IDWORLD}.3x21600x21600.[A-D][12].png -> tmp/world_seamless_${IMAGE_BORDERLESS}_[NS][1-4].mpc" >> $LOGFILE_TIME
    getProcessingTime
 
    echo | tee -a $LOGFILE_GENERAL
