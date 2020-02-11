@@ -162,6 +162,10 @@ CHECKHEIGHTS=$HEIGHTS
 
 DL_LOCATION="NASA"
 
+#allows for using an alternate download method (default to wget)
+#DL_METHOD="CURL"
+DL_METHOD="WGET"
+
 #if you have a lot of RAM, increasing this, for instance to 64GiB,
 #gives a huge speed-up
 MEM_LIMIT=512MiB
@@ -193,7 +197,6 @@ NORMALOPTS="-s 1 -f FILTER_PREWITT_3x3 -a ALPHA_INVERSE_HEIGHT"
 
 
 #set the upstream path to retrieve the world textures of the selected month
-
 IDWORLD=2004${MONTH}
 case $MONTH in
     01)
@@ -474,8 +477,15 @@ function downloadWorld
    for f in $URLS_WORLD
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
+     echo
+     echo "downloading $FILENAME..." | tee -a $LOGFILE_GENERAL
      sleep $[ ( $RANDOM % 10 )  + 1 ]s
-     wget --wait=10 --random-wait --output-document=input/$FILENAME --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
+     if [ $DL_METHOD == "CURL" ]; then
+	 curl --progress-bar -C - --output ./input/$FILENAME -O $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
+     else
+	 wget --wait=10 --random-wait --output-document=input/$FILENAME \
+	      --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
+     fi
    done
   }
 
@@ -487,8 +497,15 @@ function downloadHeights
    for f in $URLS_HEIGHTS
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
+     echo
+     echo "downloading $FILENAME..." | tee -a $LOGFILE_GENERAL
      sleep $[ ( $RANDOM % 10 )  + 1 ]s
-     wget --wait=10 --random-wait --output-document=input/$FILENAME --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
+     if [ $DL_METHOD == "CURL" ]; then
+	 curl --progress-bar -C - --output ./input/$FILENAME -O $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
+     else
+	 wget --wait=10 --random-wait --output-document=input/$FILENAME \
+	      --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
+     fi     
    done
   }
 
@@ -500,8 +517,15 @@ function downloadClouds
    for f in $URLS_CLOUDS
    do
      FILENAME=$(echo $f | sed 's@.*/@@')
+     echo
+     echo "downloading $FILENAME..." | tee -a $LOGFILE_GENERAL
      sleep $[ ( $RANDOM % 10 )  + 1 ]s
-     wget --wait=10 --random-wait --output-document=input/$FILENAME --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
+     if [ $DL_METHOD == "CURL" ]; then
+	 curl --progress-bar -C - --output ./input/$FILENAME -O $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
+     else
+	 wget --wait=10 --random-wait --output-document=input/$FILENAME \
+	      --continue --show-progress $f | tee -a $LOGFILE_GENERAL 2>> $LOGFILE_GENERAL
+     fi     
    done
   }
 
