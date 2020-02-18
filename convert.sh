@@ -368,6 +368,7 @@ function cleanUp
    rm -rvf tmp/world*
    rm -rvf tmp/cloud*
    rm -rvf tmp/height*
+   rm -rfv tmp/bluebar*
   }
 
 function prettyTime
