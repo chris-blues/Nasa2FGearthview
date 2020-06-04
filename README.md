@@ -3,8 +3,7 @@ A bash-script to convert NASA satellite images to ready-to-use
 textures for FG's EarthView using ImageMagick and normalmap
 
 You can get "normalmap" there:
-  ImageMagick6 and lower: https://github.com/planrich/normalmap
-  ImageMagick7: https://github.com/eatdust/normalmap
+  ImageMagick6 and 7: https://github.com/eatdust/normalmap
 
 For info about FGearthview, see the forum thread:\
   https://forum.flightgear.org/viewtopic.php?f=6&t=15754
@@ -77,7 +76,7 @@ explained below):
 So your call could look sth like this:
 
 ```shell
-./convert.sh world download alt cleanup 8k
+./convert.sh world download all cleanup 8k
 ```
 
 
