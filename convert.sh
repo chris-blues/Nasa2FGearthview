@@ -28,9 +28,13 @@
 #
 # v0.15: Chris Ringeval (eatdirt):
 # - add support for downloading world textures for a given month. Done
-# by appending the name of the month to the command line. Default is
-# as before, namely August.
+#   by appending the name of the month to the command line. Default is
+#   as before, namely August.
+# - change the way to make border. Instead of stretching the last
+#   pixel, we crop the corresponding part on the neighboring
+#   tiles. This prevents the appearance of seams with parallax mapping.
 #
+
 
 VERSION="v0.15"
 
@@ -103,7 +107,7 @@ function showHelp
    echo "everything will have to be regenerated from scratch. Useful"
    echo "if the source images have changed."
    echo
-   echo "./convert world 4k"
+   echo "./convert.sh world 4k"
    echo "Will generate only tiles of the world of 4096x4096 size."
    exit 1
   }
@@ -430,6 +434,68 @@ function IM2FG
    if [ $1 == "7" ] ; then DEST="S4" ; fi
   }
 
+
+function TILESAROUND
+  {
+      if [ $1 == "N1" ] ; then
+	  if [ $2 == "left" ] ;  then TILEB="N4" ; fi
+	  if [ $2 == "bottom" ] ; then TILEB="S1" ; fi
+	  if [ $2 == "right" ] ; then TILEB="N2" ; fi
+	  if [ $2 == "top" ] ; then TILEB="N1" ; fi
+      fi
+      if [ $1 == "N2" ] ; then
+	  if [ $2 == "left" ] ;  then TILEB="N1" ; fi
+	  if [ $2 == "bottom" ] ; then TILEB="S2" ; fi
+	  if [ $2 == "right" ] ; then TILEB="N3" ; fi
+	  if [ $2 == "top" ] ; then TILEB="N2" ; fi
+      fi
+      if [ $1 == "N3" ] ; then
+	  if [ $2 == "left" ] ;  then TILEB="N2" ; fi
+	  if [ $2 == "bottom" ] ; then TILEB="S3" ; fi
+	  if [ $2 == "right" ] ; then TILEB="N4" ; fi
+	  if [ $2 == "top" ] ; then TILEB="N3" ; fi
+      fi
+      if [ $1 == "N4" ] ; then
+	  if [ $2 == "left" ] ;  then TILEB="N3" ; fi
+	  if [ $2 == "bottom" ] ; then TILEB="S4" ; fi
+	  if [ $2 == "right" ] ; then TILEB="N1" ; fi
+	  if [ $2 == "top" ] ; then TILEB="N4" ; fi
+      fi
+      if [ $1 == "S1" ] ; then
+	  if [ $2 == "top" ] ; then TILEB="N1" ; fi
+	  if [ $2 == "right" ] ; then TILEB="S2" ; fi
+	  if [ $2 == "left" ] ;  then TILEB="S4" ; fi
+	  if [ $2 == "bottom" ] ; then TILEB="S1" ; fi
+      fi
+      if [ $1 == "S2" ] ; then
+	  if [ $2 == "top" ] ; then TILEB="N2" ; fi
+	  if [ $2 == "right" ] ; then TILEB="S3" ; fi
+	  if [ $2 == "left" ] ; then TILEB="S1" ; fi
+	  if [ $2 == "bottom" ] ; then TILEB="S2" ; fi
+      fi
+      if [ $1 == "S3" ] ; then
+	  if [ $2 == "top" ] ; then TILEB="N3" ; fi
+	  if [ $2 == "right" ] ; then TILEB="S4" ; fi
+	  if [ $2 == "left" ] ; then TILEB="S2" ; fi
+	  if [ $2 == "bottom" ] ; then TILEB="S3" ; fi
+      fi
+      if [ $1 == "S4" ] ; then
+	  if [ $2 == "top" ] ; then TILEB="N4" ; fi
+	  if [ $2 == "right" ] ; then TILEB="S1" ; fi
+	  if [ $2 == "left" ] ; then TILEB="S3" ; fi
+	  if [ $2 == "bottom" ] ; then TILEB="S4" ; fi
+      fi
+  }
+
+function B2B
+  {  
+      if [ $1 == "top" ] ; then ANTIB="bottom" ; fi
+      if [ $1 == "right" ] ; then ANTIB="left" ; fi
+      if [ $1 == "bottom" ] ; then ANTIB="top" ; fi
+      if [ $1 == "left" ] ; then ANTIB="right" ; fi
+      
+  }
+  
 function downloadImages
   {
    echo | tee -a $LOGFILE_GENERAL
@@ -542,7 +608,7 @@ function generateWorld
    let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
    let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
    let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
-   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
+   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - $BORDER_WIDTH"
    
    mkdir -p tmp
    mkdir -p output
@@ -755,7 +821,18 @@ function generateWorld
                -crop 1x1+1+1 \
                ${STRETCH_METHOD} ${IMAGE_BORDERLESS}x${OVERLAY_HEIGHT}\! \
                tmp/bluebar.mpc
-               set +x
+             # we overwrite the already generated N2 (B1) to add the bluebar also there	     
+	     convert \
+                -monitor \
+                -limit memory ${MEM_LIMIT} \
+                -limit map ${MEM_LIMIT} \
+                input/world.${IDWORLD}.3x21600x21600.B1.png \
+                ${RESIZE_METHOD} ${IMAGE_BORDERLESS}x${IMAGE_BORDERLESS} \
+                tmp/bluebar.mpc \
+                -geometry +0+0 \
+                -composite \
+                tmp/world_seamless_${IMAGE_BORDERLESS}_N2.mpc
+             set +x
            fi
            if [ $t == "C1" -o $t == "D1" -o $t == "A1" ]
            then
@@ -775,6 +852,7 @@ function generateWorld
               set +x
               echo
              }
+             #B1 lands here first
            else
              {
               # set -x
@@ -865,21 +943,18 @@ function generateWorld
 
    echo | tee -a $LOGFILE_GENERAL
    echo "######################################################" | tee -a $LOGFILE_GENERAL
-   echo "## crop borderline pixels and propagate to the edge ##" | tee -a $LOGFILE_GENERAL
+   echo "## crop borderline pixels from neighbouring tiles   ##" | tee -a $LOGFILE_GENERAL
    echo "######################################################" | tee -a $LOGFILE_GENERAL
 
-   CROP_TOP="${IMAGE_BORDERLESS}x1+${BORDER_WIDTH}+${BORDER_WIDTH}"
-   CROP_RIGHT="1x${IMAGE_BORDERLESS}+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
-   CROP_BOTTOM="${IMAGE_BORDERLESS}x1+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
-   CROP_LEFT="1x${IMAGE_BORDERLESS}+${BORDER_WIDTH}+${BORDER_WIDTH}"
+   CROP_TOP="${IMAGE_BORDERLESS}x${BORDER_WIDTH}+${BORDER_WIDTH}+${BORDER_WIDTH}"
+   CROP_RIGHT="${BORDER_WIDTH}x${IMAGE_BORDERLESS}+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
+   CROP_BOTTOM="${IMAGE_BORDERLESS}x${BORDER_WIDTH}+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
+   CROP_LEFT="${BORDER_WIDTH}x${IMAGE_BORDERLESS}+${BORDER_WIDTH}+${BORDER_WIDTH}"
    CROP_TOPLEFT="1x1+${BORDER_WIDTH}+${BORDER_WIDTH}"
    CROP_TOPRIGHT="1x1+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
    CROP_BOTTOMRIGHT="1x1+${IMAGE_WITH_BORDER}+${IMAGE_WITH_BORDER}"
-   CROP_BOTTOMLEFT="1x1+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
+   CROP_BOTTOMLEFT="1x1+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}" 
 
-   ## HORIZ meaning a horizontal bar, like the one on top
-   HORIZ_RESIZE="${IMAGE_BORDERLESS}x${BORDER_WIDTH}"
-   VERT_RESIZE="${BORDER_WIDTH}x${IMAGE_BORDERLESS}"
 
    POS_TOP="+${BORDER_WIDTH}+0"
    POS_RIGHT="+${IMAGE_WITH_BORDER_POS}+${BORDER_WIDTH}"
@@ -893,49 +968,72 @@ function generateWorld
      for b in $BORDERS
      do
        {
+        TILESAROUND $t $b
+	B2B $b
+
+	if [ $TILEB == $t ]
+	then
+	    fromb=$b
+	else
+	    fromb=$ANTIB
+	fi
+
+
+#currently modified tile
         if [ $b == "top" ]
-        then
-          CROP=$CROP_TOP
-          RESIZE=$HORIZ_RESIZE
-          POSITION=$POS_TOP
-          CROPCORNER=$CROP_TOPRIGHT
-          CORNER_POS="+${IMAGE_WITH_BORDER_POS}+0"
-          CORNER_NAME="topRight"
-        fi
-        if [ $b == "right" ]
-        then
-          CROP=$CROP_RIGHT
-          RESIZE=$VERT_RESIZE
-          POSITION=$POS_RIGHT
-          CROPCORNER=$CROP_BOTTOMRIGHT
-          CORNER_POS="+${IMAGE_WITH_BORDER_POS}+${IMAGE_WITH_BORDER_POS}"
-          CORNER_NAME="bottomRight"
-        fi
-        if [ $b == "bottom" ]
-        then
-          CROP=$CROP_BOTTOM
-          RESIZE=$HORIZ_RESIZE
-          POSITION=$POS_BOTTOM
-          CROPCORNER=$CROP_BOTTOMLEFT
-          CORNER_POS="+0+${IMAGE_WITH_BORDER_POS}"
-          CORNER_NAME="bottomLeft"
-        fi
-        if [ $b == "left" ]
-        then
-          CROP=$CROP_LEFT
-          RESIZE=$VERT_RESIZE
-          POSITION=$POS_LEFT
-          CROPCORNER=$CROP_TOPLEFT
-          CORNER_POS="+0+0"
-          CORNER_NAME="topLeft"
-        fi
+	then
+	    POSITION=$POS_TOP
+	    CROPCORNER=$CROP_TOPRIGHT
+	    CORNER_POS="+${IMAGE_WITH_BORDER_POS}+0"
+	    CORNER_NAME="topRight"
+	fi
+	if [ $b == "right" ]
+	then
+	    POSITION=$POS_RIGHT
+	    CROPCORNER=$CROP_BOTTOMRIGHT
+	    CORNER_POS="+${IMAGE_WITH_BORDER_POS}+${IMAGE_WITH_BORDER_POS}"
+	    CORNER_NAME="bottomRight"
+	fi
+	if [ $b == "bottom" ]
+	then
+	    POSITION=$POS_BOTTOM
+	    CROPCORNER=$CROP_BOTTOMLEFT
+	    CORNER_POS="+0+${IMAGE_WITH_BORDER_POS}"
+	    CORNER_NAME="bottomLeft"
+	fi
+	if [ $b == "left" ]
+	then
+	    POSITION=$POS_LEFT
+	    CROPCORNER=$CROP_TOPLEFT
+	    CORNER_POS="+0+0"
+	    CORNER_NAME="topLeft"
+	fi
+
+#take the borders from these		       
+	if [ $fromb == "top" ]
+	then
+	    CROP=$CROP_TOP
+	fi
+	if [ $fromb == "right" ]
+	then
+	    CROP=$CROP_RIGHT
+	fi
+	if [ $fromb == "bottom" ]
+	then
+	    CROP=$CROP_BOTTOM
+	fi
+	if [ $fromb == "left" ]
+	then
+	    CROP=$CROP_LEFT
+	fi
+
+	
         echo
         # set -x
         convert \
           -monitor \
-           tmp/world_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
+           tmp/world_seams_${RESOLUTION_MAX}_${TILEB}_emptyBorder.mpc \
           -crop $CROP \
-          ${STRETCH_METHOD} $RESIZE\! \
            tmp/world_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
         convert \
           -monitor \
@@ -1061,7 +1159,7 @@ function generateClouds
 
    let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
    let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
-   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
+   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - $BORDER_WIDTH"
    let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
    let "SIZE = 2 * $IMAGE_BORDERLESS"
 
@@ -1251,31 +1349,27 @@ W"
    getProcessingTime
 
    echo | tee -a $LOGFILE_GENERAL
-   echo "#######################################" | tee -a $LOGFILE_GENERAL
-   echo "## propagate last pixels to the edge ##" | tee -a $LOGFILE_GENERAL
-   echo "#######################################" | tee -a $LOGFILE_GENERAL
+   echo "#################################################" | tee -a $LOGFILE_GENERAL
+   echo "## crop borderline pixels from neighbour tiles ##" | tee -a $LOGFILE_GENERAL
+   echo "#################################################" | tee -a $LOGFILE_GENERAL
 
    if [[ $NO_RESOLUTION_GIVEN == "true" ]]; then
        if [ $RESOLUTION_MAX -eq 16384 ] ; then RESOLUTION_MAX=8192 ; fi
    fi
    let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
    let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
-   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
+   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - $BORDER_WIDTH"
    let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
    let "SIZE = 2 * $IMAGE_BORDERLESS"
 
-   CROP_TOP="${IMAGE_BORDERLESS}x1+${BORDER_WIDTH}+${BORDER_WIDTH}"
-   CROP_RIGHT="1x${IMAGE_BORDERLESS}+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
-   CROP_BOTTOM="${IMAGE_BORDERLESS}x1+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
-   CROP_LEFT="1x${IMAGE_BORDERLESS}+${BORDER_WIDTH}+${BORDER_WIDTH}"
+   CROP_TOP="${IMAGE_BORDERLESS}x${BORDER_WIDTH}+${BORDER_WIDTH}+${BORDER_WIDTH}"
+   CROP_RIGHT="${BORDER_WIDTH}x${IMAGE_BORDERLESS}+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
+   CROP_BOTTOM="${IMAGE_BORDERLESS}x${BORDER_WIDTH}+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
+   CROP_LEFT="${BORDER_WIDTH}x${IMAGE_BORDERLESS}+${BORDER_WIDTH}+${BORDER_WIDTH}"
    CROP_TOPLEFT="1x1+${BORDER_WIDTH}+${BORDER_WIDTH}"
    CROP_TOPRIGHT="1x1+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
    CROP_BOTTOMRIGHT="1x1+${IMAGE_WITH_BORDER}+${IMAGE_WITH_BORDER}"
    CROP_BOTTOMLEFT="1x1+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
-
-   ## HORIZ meaning a horizontal bar, like the one on top
-   HORIZ_RESIZE="${IMAGE_BORDERLESS}x${BORDER_WIDTH}"
-   VERT_RESIZE="${BORDER_WIDTH}x${IMAGE_BORDERLESS}"
 
    POS_TOP="+${BORDER_WIDTH}+0"
    POS_RIGHT="+${IMAGE_WITH_BORDER_POS}+${BORDER_WIDTH}"
@@ -1288,49 +1382,75 @@ W"
      then
      for b in $BORDERS
      do
-       {
-        if [ $b == "top" ]
-        then
-          CROP=$CROP_TOP
-          RESIZE=$HORIZ_RESIZE
-          POSITION=$POS_TOP
-          CROPCORNER=$CROP_TOPRIGHT
-          CORNER_POS="+${IMAGE_WITH_BORDER_POS}+0"
-          CORNER_NAME="topRight"
-        fi
-        if [ $b == "right" ]
-        then
-          CROP=$CROP_RIGHT
-          RESIZE=$VERT_RESIZE
-          POSITION=$POS_RIGHT
-          CROPCORNER=$CROP_BOTTOMRIGHT
-          CORNER_POS="+${IMAGE_WITH_BORDER_POS}+${IMAGE_WITH_BORDER_POS}"
-          CORNER_NAME="bottomRight"
-        fi
-        if [ $b == "bottom" ]
-        then
-          CROP=$CROP_BOTTOM
-          RESIZE=$HORIZ_RESIZE
-          POSITION=$POS_BOTTOM
-          CROPCORNER=$CROP_BOTTOMLEFT
-          CORNER_POS="+0+${IMAGE_WITH_BORDER_POS}"
-          CORNER_NAME="bottomLeft"
-        fi
-        if [ $b == "left" ]
-        then
-          CROP=$CROP_LEFT
-          RESIZE=$VERT_RESIZE
-          POSITION=$POS_LEFT
-          CROPCORNER=$CROP_TOPLEFT
-          CORNER_POS="+0+0"
-          CORNER_NAME="topLeft"
-        fi
+     {
+        TILESAROUND $t $b
+	B2B $b
+
+	if [ $TILEB == $t ]
+	then
+	    fromb=$b
+	else
+	    fromb=$ANTIB
+	fi
+
+
+	 #currently modified tile		      
+	if [ $b == "top" ]
+	then
+	    POSITION=$POS_TOP
+	    CROPCORNER=$CROP_TOPRIGHT
+	    CORNER_POS="+${IMAGE_WITH_BORDER_POS}+0"
+	    CORNER_NAME="topRight"
+	fi
+	if [ $b == "right" ]
+	then
+	    POSITION=$POS_RIGHT
+	    CROPCORNER=$CROP_BOTTOMRIGHT
+	    CORNER_POS="+${IMAGE_WITH_BORDER_POS}+${IMAGE_WITH_BORDER_POS}"
+	    CORNER_NAME="bottomRight"
+	fi
+	if [ $b == "bottom" ]
+	then
+	    POSITION=$POS_BOTTOM
+	    CROPCORNER=$CROP_BOTTOMLEFT
+	    CORNER_POS="+0+${IMAGE_WITH_BORDER_POS}"
+	    CORNER_NAME="bottomLeft"
+	fi
+	if [ $b == "left" ]
+	then
+	    POSITION=$POS_LEFT
+	    CROPCORNER=$CROP_TOPLEFT
+	    CORNER_POS="+0+0"
+	    CORNER_NAME="topLeft"
+	fi
+
+
+	 #take the borders from these		       
+	if [ $fromb == "top" ]
+	then
+	    CROP=$CROP_TOP
+	fi
+	if [ $fromb == "right" ]
+	then
+	    CROP=$CROP_RIGHT
+	fi
+	if [ $fromb == "bottom" ]
+	then
+	    CROP=$CROP_BOTTOM
+	fi
+	if [ $fromb == "left" ]
+	then
+	    CROP=$CROP_LEFT
+	fi
+	echo
+
+
+
         #set -x
         convert \
           -monitor \
-          tmp/clouds_seams_${RESOLUTION_MAX}_${t}.mpc \
+          tmp/clouds_seams_${RESOLUTION_MAX}_${TILEB}.mpc \
           -crop $CROP \
-          ${STRETCH_METHOD} $RESIZE\! \
           tmp/clouds_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
         convert \
           -monitor \
@@ -1433,7 +1553,7 @@ function generateHeights
 
    let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
    let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
-   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
+   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - $BORDER_WIDTH"
    let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
    let "SIZE = 2 * $IMAGE_BORDERLESS"
 
@@ -1535,7 +1655,7 @@ function generateHeights
 
    echo | tee -a $LOGFILE_GENERAL
    echo "######################################################" | tee -a $LOGFILE_GENERAL
-   echo "## crop borderline pixels and propagate to the edge ##" | tee -a $LOGFILE_GENERAL
+   echo "## crop borderline pixels from neighbouring tiles   ##" | tee -a $LOGFILE_GENERAL
    echo "######################################################" | tee -a $LOGFILE_GENERAL
 
    if [[ $NO_RESOLUTION_GIVEN == "true" ]]; then
@@ -1543,22 +1663,19 @@ function generateHeights
    fi
    let "BORDER_WIDTH = $RESOLUTION_MAX / 128"
    let "IMAGE_BORDERLESS = $RESOLUTION_MAX - ( 2 * $BORDER_WIDTH )"
-   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - 1"
+   let "IMAGE_WITH_BORDER = $RESOLUTION_MAX - $BORDER_WIDTH - $BORDER_WIDTH"
    let "IMAGE_WITH_BORDER_POS = $RESOLUTION_MAX - $BORDER_WIDTH"
    let "SIZE = 2 * $IMAGE_BORDERLESS"
 
-   CROP_TOP="${IMAGE_BORDERLESS}x1+${BORDER_WIDTH}+${BORDER_WIDTH}"
-   CROP_RIGHT="1x${IMAGE_BORDERLESS}+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
-   CROP_BOTTOM="${IMAGE_BORDERLESS}x1+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
-   CROP_LEFT="1x${IMAGE_BORDERLESS}+${BORDER_WIDTH}+${BORDER_WIDTH}"
+   CROP_TOP="${IMAGE_BORDERLESS}x${BORDER_WIDTH}+${BORDER_WIDTH}+${BORDER_WIDTH}"
+   CROP_RIGHT="${BORDER_WIDTH}x${IMAGE_BORDERLESS}+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
+   CROP_BOTTOM="${IMAGE_BORDERLESS}x${BORDER_WIDTH}+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
+   CROP_LEFT="${BORDER_WIDTH}x${IMAGE_BORDERLESS}+${BORDER_WIDTH}+${BORDER_WIDTH}"
    CROP_TOPLEFT="1x1+${BORDER_WIDTH}+${BORDER_WIDTH}"
    CROP_TOPRIGHT="1x1+${IMAGE_WITH_BORDER}+${BORDER_WIDTH}"
    CROP_BOTTOMRIGHT="1x1+${IMAGE_WITH_BORDER}+${IMAGE_WITH_BORDER}"
    CROP_BOTTOMLEFT="1x1+${BORDER_WIDTH}+${IMAGE_WITH_BORDER}"
-
-   ## HORIZ meaning a horizontal bar, like the one on top
-   HORIZ_RESIZE="${IMAGE_BORDERLESS}x${BORDER_WIDTH}"
-   VERT_RESIZE="${BORDER_WIDTH}x${IMAGE_BORDERLESS}"
+   
 
    POS_TOP="+${BORDER_WIDTH}+0"
    POS_RIGHT="+${IMAGE_WITH_BORDER_POS}+${BORDER_WIDTH}"
@@ -1572,49 +1689,72 @@ function generateHeights
      for b in $BORDERS
      do
        {
-        if [ $b == "top" ]
-        then
-          CROP=$CROP_TOP
-          RESIZE=$HORIZ_RESIZE
-          POSITION=$POS_TOP
-          CROPCORNER=$CROP_TOPRIGHT
-          CORNER_POS="+${IMAGE_WITH_BORDER_POS}+0"
-          CORNER_NAME="topRight"
-        fi
-        if [ $b == "right" ]
-        then
-          CROP=$CROP_RIGHT
-          RESIZE=$VERT_RESIZE
-          POSITION=$POS_RIGHT
-          CROPCORNER=$CROP_BOTTOMRIGHT
-          CORNER_POS="+${IMAGE_WITH_BORDER_POS}+${IMAGE_WITH_BORDER_POS}"
-          CORNER_NAME="bottomRight"
-        fi
-        if [ $b == "bottom" ]
-        then
-          CROP=$CROP_BOTTOM
-          RESIZE=$HORIZ_RESIZE
-          POSITION=$POS_BOTTOM
-          CROPCORNER=$CROP_BOTTOMLEFT
-          CORNER_POS="+0+${IMAGE_WITH_BORDER_POS}"
-          CORNER_NAME="bottomLeft"
-        fi
-        if [ $b == "left" ]
-        then
-          CROP=$CROP_LEFT
-          RESIZE=$VERT_RESIZE
-          POSITION=$POS_LEFT
-          CROPCORNER=$CROP_TOPLEFT
-          CORNER_POS="+0+0"
-          CORNER_NAME="topLeft"
-        fi
+        TILESAROUND $t $b
+	B2B $b
+
+        if [ $TILEB == $t ]
+	then
+	    fromb=$b
+	else
+	    fromb=$ANTIB
+	fi
+
+
+	#currently modified tile		      
+	if [ $b == "top" ]
+	then
+	    POSITION=$POS_TOP
+	    CROPCORNER=$CROP_TOPRIGHT
+	    CORNER_POS="+${IMAGE_WITH_BORDER_POS}+0"
+	    CORNER_NAME="topRight"
+	fi
+	if [ $b == "right" ]
+	then
+	    POSITION=$POS_RIGHT
+	    CROPCORNER=$CROP_BOTTOMRIGHT
+	    CORNER_POS="+${IMAGE_WITH_BORDER_POS}+${IMAGE_WITH_BORDER_POS}"
+	    CORNER_NAME="bottomRight"
+	fi
+	if [ $b == "bottom" ]
+	then
+	    POSITION=$POS_BOTTOM
+	    CROPCORNER=$CROP_BOTTOMLEFT
+	    CORNER_POS="+0+${IMAGE_WITH_BORDER_POS}"
+	    CORNER_NAME="bottomLeft"
+	fi
+	if [ $b == "left" ]
+	then
+	    POSITION=$POS_LEFT
+	    CROPCORNER=$CROP_TOPLEFT
+	    CORNER_POS="+0+0"
+	    CORNER_NAME="topLeft"
+	fi
+
+
+	#take the borders from these		       
+	if [ $fromb == "top" ]
+	then
+	    CROP=$CROP_TOP
+	fi
+	if [ $fromb == "right" ]
+	then
+	    CROP=$CROP_RIGHT
+	fi
+	if [ $fromb == "bottom" ]
+	then
+	    CROP=$CROP_BOTTOM
+	fi
+	if [ $fromb == "left" ]
+	then
+	    CROP=$CROP_LEFT
+	fi
+	
         echo
         # set -x
         convert \
           -monitor \
-          tmp/heights_seams_${RESOLUTION_MAX}_${t}_emptyBorder.mpc \
+          tmp/heights_seams_${RESOLUTION_MAX}_${TILEB}_emptyBorder.mpc \
           -crop $CROP \
-          ${STRETCH_METHOD} $RESIZE\! \
           tmp/heights_${RESOLUTION_MAX}_${t}_seam_${b}.mpc
         convert \
           -monitor \
